@@ -1,0 +1,26 @@
+{
+  "name": "sunset-genlayer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Contract-only consensus-backed expiry of temporary restrictions",
+  "type": "module",
+  "config": {
+    "network": "studionet",
+    "chainId": 61999,
+    "rpc": "https://studio.genlayer.com/api"
+  },
+  "scripts": {
+    "preflight": "python3 scripts/preflight.py",
+    "test:offline": "python3 -B -m unittest discover -s tests -p test_offline.py -v",
+    "test:direct": "python3 -m pytest -q tests/direct",
+    "deploy:sunset": "node scripts/guarded-deploy.mjs contracts/sunset.py",
+    "deploy:gate": "node scripts/guarded-deploy.mjs contracts/sunset_gate.py",
+    "source:hash": "python3 scripts/source_hashes.py"
+  },
+  "devDependencies": {
+    "genlayer": "0.39.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
