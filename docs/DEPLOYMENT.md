@@ -34,6 +34,7 @@ source is rechecked after the documentation closeout commit.
 
 ## Corrected primary deployment
 
+- Final repository commit: `a37d43478ec405daf810fb9cb291a67f32adad23`
 - Contract: `0x8D823Dcc31E4A3089D64D0f902927588Fb335Bb2`
 - Deployment transaction: `0x6efd89aeb835b9cf4b20b578a27e863604ec8fe964201f0b0267c01a26a404f1`
 - Receipt: finalized/accepted; `MAJORITY_AGREE`; `eth_getTransactionReceipt.status = 0x1`
@@ -158,6 +159,7 @@ Direct Mode suites; this ledger does not convert those tests into live evidence.
 - `pip check`: passed
 - `npm audit --omit=dev --audit-level=high`: passed
 - `pip-audit --strict`: not clean; 17 advisories across five pinned development-tool packages. These are documented toolchain findings, not deployed-contract findings.
+- Final GitHub Actions: [run 42086395478](https://github.com/ometere123/sunset/actions/runs/42086395478), all three jobs `success` for the final commit
 
 Only finalized receipts and readbacks above are release evidence. A submitted
 transaction hash, `ACCEPTED` status without successful execution, an offline

@@ -54,7 +54,6 @@ tests. Both native validator paths and the Windows-only test shim were exercised
 locally. Simulated/offline tests are not live StudioNet consensus evidence; the
 finalized live receipts are recorded in `docs/DEPLOYMENT.md`.
 
-The code-and-contract evidence workflow passed all three jobs: [GitHub Actions
-run 42058870267](https://github.com/ometere123/sunset/actions/runs/42058870267).
-The final documentation-only closeout reruns the same workflow; its result is
-reported with the final remote SHA.
+The final workflow passed all three jobs (`offline`, `genvm`, `pinned-cli`):
+[GitHub Actions run 42086395478](https://github.com/ometere123/sunset/actions/runs/42086395478)
+for commit `a37d43478ec405daf810fb9cb291a67f32adad23`.
