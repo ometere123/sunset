@@ -594,6 +594,8 @@ class SunsetTests(unittest.TestCase):
         self.assertTrue(gate.can_execute())
         self.assertTrue(gate.can_execute_bound("withdrawal-1", "withdrawal:incident-42"))
         self.assertEqual(gate.execute_once("withdrawal-1", "withdrawal:incident-42"), 1)
+        self.assertEqual(gate.get_execution_count(), 1)
+        self.assertTrue(gate.is_executed("withdrawal-1"))
 
     def test_gate_no_replay_after_expiry(self):
         self.register()

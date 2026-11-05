@@ -88,6 +88,16 @@ class SunsetGate(gl.Contract):
                 and self._payload_commitment(operation_id, payload)
                 == self.expected_action_commitment)
 
+    @gl.public.view
+    def get_execution_count(self) -> u256:
+        """Return the number of exact, finalized actions completed by this gate."""
+        return self.execution_count
+
+    @gl.public.view
+    def is_executed(self, operation_id: str) -> bool:
+        """Return whether this exact operation identifier has been consumed."""
+        return operation_id in self.executed
+
     @gl.public.write
     def execute_once(self, operation_id: str, payload: str) -> u256:
         if not (3 <= len(operation_id) <= 64 and all(
