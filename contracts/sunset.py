@@ -148,7 +148,29 @@ def _json_object(raw):
             raw = json.loads(text)
         except (ValueError, TypeError):
             return None
+    elif not isinstance(raw, dict):
+        # Some pinned GenVM builds expose JSON-mode results through a
+        # dict-compatible mapping instead of the builtin dict type. Convert
+        # only its key/value pairs; no model-provided attributes are trusted.
+        try:
+            if hasattr(raw, "keys") and hasattr(raw, "get"):
+                raw = {key: raw.get(key) for key in raw.keys()}
+            else:
+                raw = dict(raw)
+        except (TypeError, ValueError):
+            return None
     return raw if isinstance(raw, dict) else None
+
+
+def _reason_code(raw, fallback: str = "MODEL_UNSPECIFIED") -> str:
+    """Keep explanatory model text bounded without making it consensus-critical."""
+    if not isinstance(raw, str):
+        return fallback
+    value = raw.strip().upper().replace("-", "_").replace(" ", "_")
+    if (1 <= len(value) <= 48 and value.isascii()
+            and value.replace("_", "").isalnum()):
+        return value
+    return "MODEL_REASON"
 
 
 def _classify(raw, page: str) -> dict:
@@ -158,13 +180,11 @@ def _classify(raw, page: str) -> dict:
            "retryable": True}
     if not isinstance(raw, dict) or "verdict" not in raw or "quote" not in raw:
         return bad
-    reason = raw.get("reason_code", raw.get("reason"))
+    reason = _reason_code(raw.get("reason_code", raw.get("reason")))
     verdict, quote = raw["verdict"], raw["quote"]
     if verdict not in VERDICTS or not isinstance(quote, str) or not isinstance(reason, str):
         return bad
-    if (len(quote) > MAX_QUOTE or not (1 <= len(reason) <= 48)
-            or not reason.isascii() or not reason.replace("_", "").isalnum()
-            or reason != reason.upper()):
+    if len(quote) > MAX_QUOTE:
         return bad
     if verdict != INCONCLUSIVE and (len(quote.strip()) < 12 or quote not in page):
         return {"verdict": INCONCLUSIVE, "quote": "", "reason": "NO_SOURCE_WITNESS",
@@ -183,12 +203,11 @@ def _classify_audit(raw, page: str) -> dict:
     if not isinstance(raw, dict) or "audit_verdict" not in raw or "quote" not in raw:
         return {"audit_verdict": AUDIT_UNCERTAIN, "quote": "", "reason": "MALFORMED",
                 "retryable": True}
-    reason = raw.get("reason_code", raw.get("reason"))
+    reason = _reason_code(raw.get("reason_code", raw.get("reason")))
     verdict, quote = raw["audit_verdict"], raw["quote"]
     if (verdict not in (AUDIT_SAFE, AUDIT_VETO, AUDIT_UNCERTAIN)
             or not isinstance(quote, str) or not isinstance(reason, str)
-            or not (1 <= len(reason) <= 48) or not reason.isascii()
-            or not reason.replace("_", "").isalnum() or reason != reason.upper()):
+            or not (1 <= len(reason) <= 48)):
         return {"audit_verdict": AUDIT_UNCERTAIN, "quote": "", "reason": "MALFORMED",
                 "retryable": True}
     if verdict == AUDIT_SAFE and quote:

@@ -394,6 +394,34 @@ class SunsetTests(unittest.TestCase):
                   '"reason":"RESOLVED_REPORT"}\n```')
         self.assertEqual(self.mod._classify(fenced, self.gl.page)["verdict"], self.mod.ENDED)
 
+    def test_json_normalization_accepts_genvm_mapping_like_response(self):
+        class MappingLike:
+            def __init__(self, values):
+                self.values = values
+
+            def __iter__(self):
+                return iter(self.values.items())
+
+        result = self.mod._classify(
+            MappingLike({
+                "verdict": self.mod.PERSISTS,
+                "quote": "the affected service remains unavailable",
+                "reason_code": "CURRENT_REPORT",
+            }),
+            self.gl.page,
+        )
+        self.assertEqual(result["verdict"], self.mod.PERSISTS)
+
+    def test_reason_wording_is_bounded_but_not_consensus_critical(self):
+        quote = "the affected service remains unavailable"
+        result = self.mod._classify(
+            {"verdict": self.mod.PERSISTS, "quote": quote,
+             "reason_code": "supported by current source evidence"},
+            self.gl.page,
+        )
+        self.assertEqual(result["verdict"], self.mod.PERSISTS)
+        self.assertEqual(result["reason"], "SUPPORTED_BY_CURRENT_SOURCE_EVIDENCE")
+
     def test_validator_independently_rechecks_status(self):
         self.register()
         quote = "the affected service remains unavailable"
