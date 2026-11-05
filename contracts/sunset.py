@@ -106,8 +106,15 @@ def _clean_page(body: bytes) -> str:
 
 
 def _material_context(page: str, quote: str) -> str:
-    """Return the bounded source context that makes a witness meaningful."""
+    """Return unique bounded context for a material witness.
+
+    A repeated quote is not a stable witness: without a position, a leader
+    could bind the digest to one occurrence while the validator reasons about
+    another. Fail closed rather than guessing which occurrence is intended.
+    """
     if not isinstance(page, str) or not isinstance(quote, str) or not quote:
+        return ""
+    if page.count(quote) != 1:
         return ""
     position = page.find(quote)
     if position < 0:
@@ -192,7 +199,8 @@ def _classify(raw, page: str) -> dict:
         return bad
     if len(quote) > MAX_QUOTE:
         return bad
-    if verdict != INCONCLUSIVE and (len(quote.strip()) < 12 or quote not in page):
+    if verdict != INCONCLUSIVE and (
+            len(quote.strip()) < 12 or not _material_context(page, quote)):
         return {"verdict": INCONCLUSIVE, "quote": "", "reason": "NO_SOURCE_WITNESS",
                 "retryable": False}
     if verdict == INCONCLUSIVE:
@@ -440,8 +448,11 @@ class Sunset(gl.Contract):
                                             or source_digest)
             return result
         try:
-            audit_page = (_material_context(page, candidate_quote or result["quote"])
-                          or page)
+            # The audit is deliberately broader than the digest context. A
+            # newer status, distant qualification or contradictory update may
+            # be materially relevant even when it is far from the witness.
+            # MAX_PAGE bounds prompt size and source work for GenVM.
+            audit_page = page
             audit_raw = gl.nondet.exec_prompt(
                 _audit_prompt(criterion, restriction, audit_page, utc, result["verdict"],
                               candidate_quote or result["quote"]), response_format="json"
@@ -522,7 +533,7 @@ class Sunset(gl.Contract):
         and to survive an independent adversarial reading.
         """
         page, failure, _ = self._fetch_page(url)
-        if failure or proposed["quote"] not in page:
+        if failure or not _material_context(page, proposed["quote"]):
             return False
         if _material_digest(url, page, proposed["quote"]) != proposed["source_digest"]:
             return False
@@ -532,7 +543,10 @@ class Sunset(gl.Contract):
             return (independent["audit_verdict"] == AUDIT_SAFE
                     and not independent["audit_quote"])
         try:
-            audit_page = _material_context(page, proposed["quote"]) or page
+            # Re-run the adversarial audit over the complete bounded source,
+            # with the leader witness still supplied as a separate candidate
+            # field. Never reduce independent review to the local quote window.
+            audit_page = page
             raw = gl.nondet.exec_prompt(
                 _audit_prompt(criterion, restriction, audit_page, utc,
                               proposed["verdict"], proposed["quote"]),
