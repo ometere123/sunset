@@ -43,17 +43,19 @@ runner remain unchanged; Linux CI does not activate the shim.
 ## Baseline and current observations
 
 The preserved baseline commit is
-`4f7a088e6e31234230deea95640975cb7df03a1f`. The current release includes 68
-offline pytest tests, 16 Direct Mode tests, 45 preflight assertions and two
-focused mutation tests. The initial Windows Direct Mode run failed before
+`4f7a088e6e31234230deea95640975cb7df03a1f`. The historical reviewed release
+had 52 offline tests and 16 Direct Mode tests. The current release includes 58
+offline pytest tests, 16 Direct Mode tests (74 total), 45 preflight assertions
+and two focused mutation tests. The initial Windows Direct Mode run failed before
 contract import because genlayer-test 0.29.2 unlinked an open temp stdin file;
 the repository test-only pipe shim then made the native suite executable.
 
-The current local run is 68 passing offline tests and 16 passing Direct Mode
+The current local run is 58 passing offline tests and 16 passing Direct Mode
 tests. Both native validator paths and the Windows-only test shim were exercised
 locally. Simulated/offline tests are not live StudioNet consensus evidence; the
 finalized live receipts are recorded in `docs/DEPLOYMENT.md`.
 
-The final workflow passed all three jobs (`offline`, `genvm`, `pinned-cli`):
-[GitHub Actions run 42086395478](https://github.com/ometere123/sunset/actions/runs/42086395478)
-for commit `a37d43478ec405daf810fb9cb291a67f32adad23`.
+The final workflow result and commit are recorded after the documentation
+closeout in the repository release ledger and the GitHub Actions run linked
+from the final release commit. Historical run `42086859791` and commit
+`07b933c08d79152244f6bb627730307918ddea88` are retained only as prior evidence.

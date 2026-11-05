@@ -9,9 +9,10 @@ The deterministic walkthrough is intentionally small:
 3. Before the window, `assess_renewal` rejects `TOO_EARLY`.
 4. In the window, the owner submits the exact expected epoch and expiry.
 5. The leader and validator each retrieve the frozen source. A positive result
-   must also pass the independent adversarial compatible-reading audit. They
-   must agree on the material verdict while the validator independently checks
-   the leader witness and context; quote and reason wording may differ.
+   must also pass the independent adversarial compatible-reading audit; an
+   ending result must pass a separate affirmative-resolution audit. They must
+   agree on the material verdict while the validator independently checks the
+   leader witness and complete bounded source; quote and reason wording may differ.
 6. A positive result advances expiry by exactly one original epoch; it never uses
    transaction time plus duration and never crosses the hard stop.
 7. A transient failure records `PROOF_RETRYABLE` without extending the rule;

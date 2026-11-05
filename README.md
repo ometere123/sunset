@@ -30,9 +30,10 @@ consensus, unavailable evidence and unresolved recovery never extend it.
    third party from consuming another party's recovery allowance during an
    outage.
 3. The leader fetches the source and runs the primary semantic classification.
-   A positive result receives one bounded adversarial compatible-reading audit.
+   A positive result receives one bounded adversarial compatible-reading audit;
+   an ending result receives a separate bounded affirmative-resolution audit.
 4. The validator independently repeats the source fetch, primary classification
-   and positive audit. Consensus compares the decision-bearing material verdict
+   and positive or ending audit. Consensus compares the decision-bearing material verdict
    and retryability, while independently verifying the leader's witness,
    bounded surrounding context and source binding. Legitimate quote and reason
    wording differences do not cause disagreement; unsupported or materially
@@ -105,7 +106,10 @@ file-unlink defect in genlayer-test 0.29.2; it is inactive on CI's Linux runner.
 
 Public HTTPS material is treated as untrusted data and is independently
 retrieved by leader and validator. Exact quotes must occur in the retrieved,
-whitespace-normalized extract. The source URL filter rejects credentials,
+whitespace-normalized extract. The bounded adversarial audits inspect the full
+normalized source snapshot (up to 12,000 characters), not merely the local
+witness window, so distant newer updates, qualifications and contradictions can
+veto a result. The source URL filter rejects credentials,
 explicit ports, queries, fragments, percent-encoding, IP literals, private
 namespaces and common DNS-to-private-IP wrapper domains. The GenVM v0.2.12 web
 response exposes status, headers and body but not a cryptographically
@@ -115,9 +119,10 @@ actor, action, identity, source ownership or legal consequence.
 
 The finalized StudioNet deployment, source-parity checks and consumer receipts
 are recorded in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The corrected primary
-release address is `0x8D823Dcc31E4A3089D64D0f902927588Fb335Bb2`. The final
-positive-rule consumer is `0x7376A4BED67841C98F3061D894776b66C0Ab70F6`; the
-separate automatic-expiry consumer is
-`0x50011d2Da2bb665cb79b3De45a7A4202e3b7de14`. The explorer service returned
+release address is `0x0Fd9A98eC49Ea04c2b71D7552B62F603D1b12970`. The current
+ended-rule, positive-rule and expiry-rule gates are
+`0x0351CFA149FeB4090Bff1D9EBaDAF77a6badF11F`,
+`0xcd69aF94ED4C3CD40bcB3226F46CF4133d6C857C` and
+`0xbb98ad6d84bAd27cA2F51A5c5FEF545b72C40c3E`. The explorer service returned
 HTTP 503 during address-page verification, so no address-specific explorer URL
 is claimed here.

@@ -19,7 +19,9 @@ execute `_observe` independently. `_observe`:
 5. validates the typed result and an exact 12–220 character witness; and
 6. when the primary result is positive, runs `_audit_prompt` once to search for
    exceptions, changed actors/dates/subjects, selective quotation, stale source
-   context or a compatible reading that defeats persistence.
+   context or a compatible reading that defeats persistence; an ending result
+   is independently checked with `_ending_audit_prompt` for affirmative
+   resolution rather than absence of persistence evidence.
 
 The validator does not inspect only the leader's shape. It independently
 re-fetches, re-prompts and re-audits. `_valid_result` rejects extra fields,
@@ -27,7 +29,11 @@ wrong types, invalid enums, invalid hashes, missing witnesses and inconsistent
 audit/retryability combinations. The validator requires agreement on the
 decision-bearing verdict and retryability. It then verifies the leader's exact
 witness against a fresh source fetch, recomputes its bounded material digest,
-and independently runs the adversarial audit against the witness context.
+and independently runs the appropriate adversarial audit against the complete
+bounded normalized source snapshot, with the leader witness highlighted. The
+240-character material context is used for a tolerant material digest, not as
+the full semantic audit boundary; distant newer updates, qualifications and
+contradictions remain visible to validators. Repeated witnesses fail closed.
 Snapshot hashes, quote selection and bounded reason codes may differ when they
 do not change the material conclusion. A leader claiming persistence while
 the validator sees an ended, vetoed, changed or unavailable source therefore
@@ -36,8 +42,8 @@ cannot produce an accepted renewal.
 This is the stable-runtime equivalent of a substantive Equivalence Principle:
 open-ended explanatory text is not compared byte-for-byte, but the validator
 must independently establish the material facts needed for the state
-transition. Positive persistence is never accepted without an independently
-satisfactory audit. Malformed, unsupported or materially divergent proposals
+transition. Positive persistence and affirmative resolution are never accepted
+without independently satisfactory material support. Malformed, unsupported or materially divergent proposals
 fail closed.
 
 ## Result mapping
@@ -94,6 +100,14 @@ observed trace fact.
 
 The corrected implementation therefore compares material verdict and
 retryability, independently verifies the leader witness and bounded context,
-and runs the positive compatible-reading audit independently. It retains
+and runs the positive or affirmative-resolution audit independently. It retains
 strict typed envelopes and fail-closed disagreement semantics without requiring
 open-ended quotations or reason wording to be byte-identical.
+
+The corrected StudioNet early-ending proof used a fresh controlled fixture whose
+source was first observed in an active state and then updated to an explicit
+resolved state. The earlier IANA-based early-ending attempts remained
+`MAJORITY_DISAGREE` and made no state transition. The fresh proof finalized
+`MAJORITY_AGREE` with `JUSTIFICATION_ENDED`, and the rule read back as
+`ENDED_EARLY`. This demonstrates the protocol path only; a public fixture does
+not establish a real-world actor, event, source owner or legal conclusion.

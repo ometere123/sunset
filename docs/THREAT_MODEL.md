@@ -26,9 +26,9 @@ external website or make a legal or real-world truth determination.
 | Temporary source/model outage | owner-only, two-attempt `PROOF_RETRYABLE` recovery with immutable receipts | a genuine emergency can still expire if recovery is exhausted |
 | Third-party assessment griefing | only the registered owner can start or retry an assessment | owner availability remains a liveness dependency |
 | Malicious leader fabricates persistence | validator independently fetches, classifies and positive-audits; material verdict/retryability agreement plus witness/context verification | validator-majority collusion is outside this contract's guarantee |
-| Positive classification hides an exception | bounded independent compatible-reading audit; veto/uncertainty fails closed | semantic model judgment remains probabilistic |
+| Positive or ending classification hides a distant qualification | full bounded-source independent compatible-reading or affirmative-resolution audit; veto/uncertainty fails closed | semantic model judgment remains probabilistic |
 | Source prompt injection | source is escaped and labelled untrusted; source instructions are never binding | no prompt-isolation technique is a formal proof of model behavior |
-| Fabricated or selective quote | decisive results require exact source witness; audit quotes also require exact witness | a true quote can still be misleading without complete source context |
+| Fabricated, repeated or selective quote | decisive results require one exact source witness; repeated witnesses fail closed; audit prompts inspect the full bounded source | source content can still change between observations and a true quote can still be misleading |
 | SSRF/private source | conservative HTTPS parser, no credentials/ports/query/fragment/encoding/IP/private wrappers | GenVM response does not expose authenticated DNS owner or final redirect destination |
 | Payload substitution in consumer | immutable domain-separated commitment includes registry, rule, fingerprint, operation ID and exact payload | consumer application must not add an alternate unchecked path |
 | Consumer replay | operation ID is recorded and action commitment is one-shot | a separate gate can intentionally authorize a separate action |
@@ -47,10 +47,11 @@ and after the decision.
 
 The validator does not trust a leader's quote or explanation. It independently
 retrieves the frozen source, verifies the leader's witness and bounded material
-context, and independently runs the positive compatible-reading audit. The
-validator may accept different legitimate quotes or reason codes when the
-decision-bearing material classification agrees; a materially different or
-unsupported result is rejected.
+context, and independently runs the positive compatible-reading or affirmative-
+resolution audit over the complete bounded source snapshot. The validator may
+accept different legitimate quotes or reason codes when the decision-bearing
+material classification agrees; a materially different or unsupported result
+is rejected.
 
 ## Non-goals and accepted limitations
 
