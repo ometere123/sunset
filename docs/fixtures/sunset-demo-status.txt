@@ -1,7 +1,7 @@
 SUNSET CONTROLLED PUBLIC DEMONSTRATION FIXTURE
 Fixture ID: SUNSET-LIVE-01
-Status: ACTIVE
-Continuation condition: the demonstration restriction remains active.
-Resolution: NONE
+Status: RESOLVED
+Continuation condition: the demonstration restriction no longer remains active.
+Resolution: SUNSET-LIVE-01 is resolved; the demonstration restriction is ended.
 This file is a protocol-mechanics fixture, not evidence of an unrelated
 real-world incident, identity, actor action, source ownership or legal fact.
