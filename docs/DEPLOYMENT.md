@@ -31,7 +31,7 @@ or password is stored in this repository or CI.
 
 | Field | Verified value |
 |---|---|
-| Final branch / commit | Updated after the final local verification commit; GitHub CI status is recorded below |
+| Final branch / commit | `main`; final remote SHA is reported after the documentation closeout commit |
 | `contracts/sunset.py` SHA-256 | `cd82caa8d881d54521ed0f16c159da95c59c9e21fbd759d7468f02c017c05eed` |
 | `contracts/sunset_gate.py` SHA-256 | `0edd5c49191d50241dc8a58e94488bdaf9a9367e67301cc6684d7674badec902` |
 | Local CLI version | `genlayer@0.39.1` verified locally |
@@ -45,6 +45,8 @@ or password is stored in this repository or CI.
 | SunsetGate finality and execution | `FINALIZED`, `MAJORITY_AGREE`, constructor execution `SUCCESS` |
 | Consumer explorer | Explorer base recorded; address-specific page was not independently verified because the explorer returned HTTP 503 during verification |
 | On-chain source byte parity | Sunset: exact bytes, 25,767 bytes, SHA-256 above. SunsetGate: exact bytes, 4,857 bytes, SHA-256 above. |
+| Local verification | 56 pytest tests passed, including 14 Direct Mode tests; 45 preflight assertions passed |
+| GitHub Actions | [run 42057931345](https://github.com/ometere123/sunset/actions/runs/42057931345): `success` for release commit `fc2238e26731aa5d84cbf69dc7f92df6fb7d0443` |
 
 Only a finalized receipt with successful execution may fill these fields.
 `ACCEPTED`, a submitted hash, an address with no successful code deployment or
@@ -115,3 +117,11 @@ release artifacts claimed here.
 
 The explorer returned HTTP 503 during address-page checks, so no
 address-specific explorer URL is claimed as verified.
+
+`pip check` and `npm audit --omit=dev --audit-level=high` passed. A local
+`pip-audit --strict` review was not clean because the pinned development
+toolchain reports 17 advisories across five packages (including transitive
+`aiohttp`, `certifi`, `multidict`, `pip` and `pytest` findings). These are
+development-toolchain findings rather than deployed contract defects; the
+repository keeps the pinned GenLayer test/linter versions required for stable
+compatibility and does not claim a clean Python vulnerability audit.
