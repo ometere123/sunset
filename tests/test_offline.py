@@ -422,6 +422,17 @@ class SunsetTests(unittest.TestCase):
         self.assertEqual(result["verdict"], self.mod.PERSISTS)
         self.assertEqual(result["reason"], "SUPPORTED_BY_CURRENT_SOURCE_EVIDENCE")
 
+    def test_safe_audit_may_include_a_verified_witness_without_becoming_retryable(self):
+        result = self.mod._classify_audit(
+            {"audit_verdict": self.mod.AUDIT_SAFE,
+             "quote": "the affected service remains unavailable",
+             "reason_code": "NO_EXCEPTION_FOUND"},
+            self.gl.page,
+        )
+        self.assertEqual(result["audit_verdict"], self.mod.AUDIT_SAFE)
+        self.assertFalse(result["retryable"])
+        self.assertEqual(result["quote"], "")
+
     def test_validator_independently_rechecks_status(self):
         self.register()
         quote = "the affected service remains unavailable"

@@ -217,8 +217,14 @@ def _classify_audit(raw, page: str) -> dict:
         return {"audit_verdict": AUDIT_UNCERTAIN, "quote": "", "reason": "MALFORMED",
                 "retryable": True}
     if verdict == AUDIT_SAFE and quote:
-        return {"audit_verdict": AUDIT_UNCERTAIN, "quote": "", "reason": "SAFE_HAS_QUOTE",
-                "retryable": True}
+        # A harmless explanatory witness is not itself a veto. The source and
+        # candidate verdict are still independently checked; discard the
+        # non-decision-bearing witness before storing the normalized result.
+        if len(quote.strip()) > MAX_QUOTE or quote not in page:
+            return {"audit_verdict": AUDIT_UNCERTAIN, "quote": "",
+                    "reason": "SAFE_WITNESS_INVALID", "retryable": False}
+        return {"audit_verdict": AUDIT_SAFE, "quote": "", "reason": reason,
+                "retryable": False}
     if verdict != AUDIT_SAFE and (len(quote.strip()) < 12 or quote not in page):
         # The audit has not established a concrete veto, but uncertainty is
         # still a valid semantic fail-closed outcome without a witness.
@@ -434,8 +440,10 @@ class Sunset(gl.Contract):
                                             or source_digest)
             return result
         try:
+            audit_page = (_material_context(page, candidate_quote or result["quote"])
+                          or page)
             audit_raw = gl.nondet.exec_prompt(
-                _audit_prompt(criterion, restriction, page, utc, result["verdict"],
+                _audit_prompt(criterion, restriction, audit_page, utc, result["verdict"],
                               candidate_quote or result["quote"]), response_format="json"
             )
             audit = _classify_audit(audit_raw, page)
@@ -524,8 +532,9 @@ class Sunset(gl.Contract):
             return (independent["audit_verdict"] == AUDIT_SAFE
                     and not independent["audit_quote"])
         try:
+            audit_page = _material_context(page, proposed["quote"]) or page
             raw = gl.nondet.exec_prompt(
-                _audit_prompt(criterion, restriction, page, utc,
+                _audit_prompt(criterion, restriction, audit_page, utc,
                               proposed["verdict"], proposed["quote"]),
                 response_format="json",
             )
