@@ -26,6 +26,9 @@ LIVE, REVOKED, ENDED_EARLY, SEALED_EXPIRED = (
     "LIVE", "REVOKED", "ENDED_EARLY", "SEALED_EXPIRED"
 )
 MAX_PAGE, MAX_QUOTE = 12000, 220
+# Decode/normalize only within a bounded raw-byte budget. A source that cannot
+# fit in the complete semantic snapshot is rejected rather than truncated.
+MAX_BODY_BYTES = MAX_PAGE * 4
 MAX_RECOVERY_ATTEMPTS = 2
 WRAPPER_HOST_SUFFIXES = (
     ".nip.io", ".sslip.io", ".xip.io", ".localtest.me", ".lvh.me",
@@ -99,10 +102,23 @@ def _safe_url(url: str) -> bool:
     return bool(_normalize_source_url(url))
 
 
-def _clean_page(body: bytes) -> str:
+def _clean_page(body: bytes) -> tuple[str, bool]:
+    """Normalize a complete bounded source, returning ``(page, oversized)``.
+
+    The previous implementation sliced the decoded prefix before whitespace
+    normalization. That silently discarded later evidence. The raw-byte guard
+    keeps decoding bounded; the normalized-length guard keeps prompt size
+    bounded. Either limit fails closed instead of evaluating an incomplete
+    source snapshot.
+    """
     if not isinstance(body, bytes) or not body:
-        return ""
-    return " ".join(body.decode("utf-8", errors="replace")[:MAX_PAGE].split())
+        return "", False
+    if len(body) > MAX_BODY_BYTES:
+        return "", True
+    page = " ".join(body.decode("utf-8", errors="replace").split())
+    if len(page) > MAX_PAGE:
+        return "", True
+    return page, False
 
 
 def _material_context(page: str, quote: str) -> str:
@@ -447,9 +463,11 @@ class Sunset(gl.Contract):
             final_url = getattr(response, "url", None)
             if final_url and _normalize_source_url(str(final_url)) != url:
                 return "", "SOURCE_REDIRECT", True
-            page = _clean_page(response.body)
+            page, oversized = _clean_page(response.body)
         except Exception:
             return "", "SOURCE_FETCH_FAILED", True
+        if oversized:
+            return "", "SOURCE_TOO_LARGE", False
         if len(page) < 40:
             return page, "SOURCE_UNAVAILABLE", True
         return page, "", False

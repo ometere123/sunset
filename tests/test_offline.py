@@ -635,6 +635,54 @@ class SunsetTests(unittest.TestCase):
         self.assertIn(later, self.gl.prompts[-1])
         self.assertIn("affirmatively establishes", self.gl.prompts[-1])
 
+    def test_oversized_source_with_distant_contradiction_fails_closed(self):
+        old_quote = "the affected service remains unavailable"
+        later = "Latest update: the incident is resolved and service restored."
+        body = (old_quote + ". " + ("Archived detail. " * 900)
+                + later).encode("utf-8")
+        page, oversized = self.mod._clean_page(body)
+        self.assertEqual(page, "")
+        self.assertTrue(oversized)
+
+        self.gl.page = body.decode("utf-8")
+        self.gl.answers = [
+            {"verdict": self.mod.PERSISTS, "quote": old_quote,
+             "reason_code": "OLD_STATUS"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "INCOMPLETE"},
+        ]
+        self.register()
+        self.clock += 60
+        rule = self.sunset._rule("incident-42")
+        result = self.sunset.assess_renewal("incident-42", rule.renewals, rule.expiry)
+        self.assertEqual(result, self.mod.INCONCLUSIVE)
+        updated = self.sunset.get_rule("incident-42")
+        self.assertEqual(updated["last_verdict"], self.mod.INCONCLUSIVE)
+        self.assertEqual(updated["expires_at"], str(rule.expiry))
+        self.assertEqual(updated["status"], "ACTIVE")
+        self.assertEqual(self.gl.prompts, [])
+
+    def test_oversized_source_cannot_approve_early_termination(self):
+        old_quote = "the incident has been resolved"
+        later = "Later status: the incident remains unresolved and service is still unavailable."
+        body = (old_quote + ". " + ("Archived detail. " * 900)
+                + later).encode("utf-8")
+        self.gl.page = body.decode("utf-8")
+        self.gl.answers = [
+            {"verdict": self.mod.ENDED, "quote": old_quote,
+             "reason_code": "OLD_RESOLUTION"},
+        ]
+        self.register()
+        self.clock += 60
+        rule = self.sunset._rule("incident-42")
+        result = self.sunset.assess_renewal("incident-42", rule.renewals, rule.expiry)
+        self.assertEqual(result, self.mod.INCONCLUSIVE)
+        updated = self.sunset.get_rule("incident-42")
+        self.assertEqual(updated["last_verdict"], self.mod.INCONCLUSIVE)
+        self.assertEqual(updated["expires_at"], str(rule.expiry))
+        self.assertEqual(updated["status"], "ACTIVE")
+        self.assertEqual(self.gl.prompts, [])
+
     def test_inconclusive_quote_is_normalized_to_terminal_uncertainty(self):
         result = self.mod._classify(
             {"verdict": self.mod.INCONCLUSIVE,

@@ -1,0 +1,10 @@
+SUNSET CONTROLLED PUBLIC DEMONSTRATION FIXTURE
+Fixture ID: SUNSET-HARDENING-EARLY-01
+Status: ACTIVE
+Latest update: SUNSET-HARDENING-EARLY-01 remains active and unresolved.
+Continuation condition: SUNSET-HARDENING-EARLY-01 remains active and unresolved.
+Evidence statement: this fixture affirmatively confirms the restriction remains
+active at the time of retrieval.
+Resolution: NONE
+This file is a protocol-mechanics fixture, not evidence of an unrelated
+real-world incident, identity, actor action, source ownership or legal fact.

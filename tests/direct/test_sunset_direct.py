@@ -86,6 +86,51 @@ def test_ended_closes_before_deadline(direct_vm, direct_deploy):
     assert sunset.get_rule("inc42")["status"] == "ENDED_EARLY"
 
 
+def test_oversized_source_with_distant_contradiction_fails_closed(
+        direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    old_quote = "the affected service remains unavailable"
+    later = "Latest update: the incident is resolved and service restored."
+    body = old_quote + ". " + ("Archived detail. " * 900) + later
+    direct_vm.mock_web(r"status\.example\.org/incidents/inc42",
+                       {"status": 200, "body": body})
+    direct_vm.mock_llm(
+        r"SUNSET: skeptical",
+        json.dumps({"verdict": "JUSTIFICATION_PERSISTS", "quote": old_quote,
+                    "reason_code": "OLD_STATUS"})
+    )
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    assert sunset.assess_renewal("inc42", 0, expiry) == "INCONCLUSIVE"
+    rule = sunset.get_rule("inc42")
+    assert int(rule["expires_at"]) == expiry
+    assert rule["status"] == "ACTIVE"
+    assert rule["last_verdict"] == "INCONCLUSIVE"
+    assert sunset.get_assessment("inc42", 0)["verdict"] == "INCONCLUSIVE"
+
+
+def test_oversized_source_cannot_approve_early_termination(
+        direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    old_quote = "the incident has been resolved"
+    later = "Later status: the incident remains unresolved and service is still unavailable."
+    body = old_quote + ". " + ("Archived detail. " * 900) + later
+    direct_vm.mock_web(r"status\.example\.org/incidents/inc42",
+                       {"status": 200, "body": body})
+    direct_vm.mock_llm(
+        r"SUNSET: skeptical",
+        json.dumps({"verdict": "JUSTIFICATION_ENDED", "quote": old_quote,
+                    "reason_code": "OLD_RESOLUTION"})
+    )
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    assert sunset.assess_renewal("inc42", 0, expiry) == "INCONCLUSIVE"
+    rule = sunset.get_rule("inc42")
+    assert int(rule["expires_at"]) == expiry
+    assert rule["status"] == "ACTIVE"
+    assert rule["last_verdict"] == "INCONCLUSIVE"
+
+
 def test_validator_rejects_disagreement(direct_vm, direct_deploy):
     sunset, _ = setup(direct_vm, direct_deploy)
     direct_vm.warp("2026-10-29T10:40:00+00:00")
