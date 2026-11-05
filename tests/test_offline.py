@@ -616,6 +616,25 @@ class SunsetTests(unittest.TestCase):
         )
         self.assertEqual(result["verdict"], self.mod.ENDED)
 
+    def test_ended_audit_rejects_distant_unresolved_update(self):
+        quote_one = "the affected service has been resolved"
+        quote_two = "the incident is no longer active"
+        later = "Later status: the incident remains unresolved and service is still unavailable."
+        self.gl.page = quote_one + ". " + ("Archived detail. " * 40) + quote_two + ". " + later
+        self.gl.answers = [
+            {"verdict": self.mod.ENDED, "quote": quote_one,
+             "reason_code": "RESOLUTION"},
+            {"verdict": self.mod.ENDED, "quote": quote_two,
+             "reason_code": "CURRENT_STATUS"},
+            {"audit_verdict": self.mod.AUDIT_VETO,
+             "quote": "the incident remains unresolved and service is still unavailable",
+             "reason_code": "LATER_CONTRADICTION"},
+        ]
+        self.assertRejected(self.sunset._consensus, self.source, self.criteria,
+                            self.restriction, "2026-10-30T00:00:00+00:00")
+        self.assertIn(later, self.gl.prompts[-1])
+        self.assertIn("affirmatively establishes", self.gl.prompts[-1])
+
     def test_inconclusive_quote_is_normalized_to_terminal_uncertainty(self):
         result = self.mod._classify(
             {"verdict": self.mod.INCONCLUSIVE,

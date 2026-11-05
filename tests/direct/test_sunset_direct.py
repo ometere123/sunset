@@ -26,7 +26,7 @@ def mock_evidence(direct_vm, status="JUSTIFICATION_PERSISTS", quote=QUOTE):
         r"SUNSET: skeptical",
         json.dumps({"verdict": status, "quote": quote, "reason_code": "OFFICIAL_UPDATE"})
     )
-    if status == "JUSTIFICATION_PERSISTS":
+    if status in ("JUSTIFICATION_PERSISTS", "JUSTIFICATION_ENDED"):
         direct_vm.mock_llm(
             r"SUNSET: adversarial",
             json.dumps({"audit_verdict": "SAFE", "quote": "",
