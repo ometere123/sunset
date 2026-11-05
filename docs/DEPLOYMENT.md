@@ -46,7 +46,7 @@ or password is stored in this repository or CI.
 | Consumer explorer | Explorer base recorded; address-specific page was not independently verified because the explorer returned HTTP 503 during verification |
 | On-chain source byte parity | Sunset: exact bytes, 25,767 bytes, SHA-256 above. SunsetGate: exact bytes, 4,857 bytes, SHA-256 above. |
 | Local verification | 56 pytest tests passed, including 14 Direct Mode tests; 45 preflight assertions passed |
-| GitHub Actions | [run 42057931345](https://github.com/ometere123/sunset/actions/runs/42057931345): `success` for release commit `fc2238e26731aa5d84cbf69dc7f92df6fb7d0443` |
+| GitHub Actions | [run 42058493651](https://github.com/ometere123/sunset/actions/runs/42058493651): `success` for final documentation closeout commit `e7361a4893ad748b1875b5e15b352bbe9b175696` |
 
 Only a finalized receipt with successful execution may fill these fields.
 `ACCEPTED`, a submitted hash, an address with no successful code deployment or

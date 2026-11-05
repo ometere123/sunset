@@ -53,7 +53,5 @@ Windows-only test shim were exercised locally. Simulated/offline tests are not
 live StudioNet consensus evidence; the finalized live receipts are recorded in
 `docs/DEPLOYMENT.md`.
 
-The release workflow run for the code-and-contract evidence commit passed all
-three jobs: [GitHub Actions run 42057931345](https://github.com/ometere123/sunset/actions/runs/42057931345).
-The final documentation-only closeout commit triggers the same workflow again;
-its result must be checked before release reporting.
+The final release workflow passed all three jobs: [GitHub Actions run
+42058493651](https://github.com/ometere123/sunset/actions/runs/42058493651).
