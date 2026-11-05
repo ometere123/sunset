@@ -43,10 +43,10 @@ fingerprint, wrong actor or wrong payload cannot. A different rule/attempt or a
 different downstream action needs a separately constructed gate; one clearance
 is not blanket authorization.
 
-The current release deployment uses `0x0351CFA149FeB4090Bff1D9EBaDAF77a6badF11F`
-for the ended-rule gate, `0xcd69aF94ED4C3CD40bcB3226F46CF4133d6C857C` for the
-positive-rule gate and `0xbb98ad6d84bAd27cA2F51A5c5FEF545b72C40c3E` for the
-separate expiry gate. All are bound to the corrected SUNSET registry deployment
+The current release deployment uses `0x5Ed933fc2992d466cCa5157160AB9a5d53A7b045`
+for the ended-rule gate, `0x3770b26E4377FF920867A8cfF2A14da18A4d1B93` for the
+positive-rule gate and `0x3A6C995b1A41daf1DbBC5B72c02b2dd4826fB812` for the
+separate expiry gate. All are bound to the hardened SUNSET registry deployment
 recorded in `docs/DEPLOYMENT.md`.
 
 ## Live proof policy

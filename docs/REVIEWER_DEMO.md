@@ -21,6 +21,10 @@ The deterministic walkthrough is intentionally small:
 9. A `SunsetGate` bound to the exact registry, rule, fingerprint, executor and
    action commitment rejects while active and accepts only the exact payload
    after clearance/expiry. A changed payload, actor or replay is rejected.
+10. An oversized source is not truncated: `SOURCE_TOO_LARGE` is terminal for the
+    assessment, so an old witness cannot hide a newer contradiction beyond the
+    former 12,000-character cutoff. Offline and native Direct Mode regressions
+    cover both persistence and early-ending attempts.
 
 Offline and Direct Mode demonstrations are not live StudioNet evidence. Real
 deployment addresses, finalized transaction hashes and source parity belong in

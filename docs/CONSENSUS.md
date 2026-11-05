@@ -12,8 +12,11 @@ execute `_observe` independently. `_observe`:
 
 1. performs `gl.nondet.web.get` against the immutable URL;
 2. requires HTTP 200 and rejects an explicit redirect location header;
-3. normalizes at most 12,000 decoded characters and computes the
-   domain-separated `SUNSET_SOURCE_SNAPSHOT_V1` digest;
+3. decodes and whitespace-normalizes only within a bounded raw-byte budget;
+   if the decoded normalized source exceeds 12,000 characters, the observation
+   returns terminal `SOURCE_TOO_LARGE` and fails closed instead of silently
+   truncating newer or contradictory evidence, then computes the domain-separated
+   `SUNSET_SOURCE_SNAPSHOT_V1` digest for accepted snapshots;
 4. runs `_prompt` with the criterion and restriction inside escaped,
    explicitly untrusted source tags;
 5. validates the typed result and an exact 12–220 character witness; and
@@ -36,7 +39,7 @@ the full semantic audit boundary; distant newer updates, qualifications and
 contradictions remain visible to validators. Repeated witnesses fail closed.
 Snapshot hashes, quote selection and bounded reason codes may differ when they
 do not change the material conclusion. A leader claiming persistence while
-the validator sees an ended, vetoed, changed or unavailable source therefore
+the validator sees an ended, vetoed, changed, oversized or unavailable source therefore
 cannot produce an accepted renewal.
 
 This is the stable-runtime equivalent of a substantive Equivalence Principle:

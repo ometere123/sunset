@@ -118,11 +118,11 @@ trust limitations. Public pages do not independently prove the real-world
 actor, action, identity, source ownership or legal consequence.
 
 The finalized StudioNet deployment, source-parity checks and consumer receipts
-are recorded in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The corrected primary
-release address is `0x0Fd9A98eC49Ea04c2b71D7552B62F603D1b12970`. The current
+are recorded in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The hardened primary
+release address is `0xBDEAF4190a85d1aDA0BD6f82530B0711b25E306f`. The current
 ended-rule, positive-rule and expiry-rule gates are
-`0x0351CFA149FeB4090Bff1D9EBaDAF77a6badF11F`,
-`0xcd69aF94ED4C3CD40bcB3226F46CF4133d6C857C` and
-`0xbb98ad6d84bAd27cA2F51A5c5FEF545b72C40c3E`. The explorer service returned
+`0x5Ed933fc2992d466cCa5157160AB9a5d53A7b045`,
+`0x3770b26E4377FF920867A8cfF2A14da18A4d1B93` and
+`0x3A6C995b1A41daf1DbBC5B72c02b2dd4826fB812`. The explorer service returned
 HTTP 503 during address-page verification, so no address-specific explorer URL
 is claimed here.

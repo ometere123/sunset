@@ -10,8 +10,8 @@ Character count, including spaces: 884.
 
 - Repository: https://github.com/ometere123/sunset
 - Network: StudioNet, chain 61999, `https://studio.genlayer.com/api`
-- Primary contract: `0x0Fd9A98eC49Ea04c2b71D7552B62F603D1b12970`
-- Consumer contracts: `0x0351CFA149FeB4090Bff1D9EBaDAF77a6badF11F` (ended-rule gate); `0xcd69aF94ED4C3CD40bcB3226F46CF4133d6C857C` (positive gate); `0xbb98ad6d84bAd27cA2F51A5c5FEF545b72C40c3E` (expiry gate)
+- Primary contract: `0xBDEAF4190a85d1aDA0BD6f82530B0711b25E306f`
+- Consumer contracts: `0x5Ed933fc2992d466cCa5157160AB9a5d53A7b045` (ended-rule gate); `0x3770b26E4377FF920867A8cfF2A14da18A4d1B93` (positive gate); `0x3A6C995b1A41daf1DbBC5B72c02b2dd4826fB812` (expiry gate)
 - Explorer: https://genlayer-explorer.vercel.app (address pages returned HTTP 503 during independent verification)
 
 ## GenLayer-native mechanism
@@ -28,8 +28,8 @@ enforcement.
 
 ## Evidence status
 
-The final verification records 58 offline pytest tests, 16 native Direct Mode
-tests (74 total), 45 preflight assertions, two focused mutation tests and both contracts
+The final verification records 60 offline pytest tests, 18 native Direct Mode
+tests (78 total), 45 preflight assertions, two focused mutation tests and both contracts
 passing GenVM lint and schema validation under linter 0.11.0 and runner
 v0.2.12. Finalized StudioNet deployment, source-parity and consumer receipts
 are recorded in `docs/DEPLOYMENT.md`. No simulated result is presented as live
