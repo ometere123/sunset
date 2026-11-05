@@ -47,6 +47,8 @@ and 8 Direct Mode tests. The initial Windows Direct Mode run failed before
 contract import because genlayer-test 0.29.2 unlinked an open temp stdin file;
 the repository test-only pipe shim then made the native suite executable.
 
-The current counts and final CI status are intentionally maintained in the
-release report and workflow rather than guessed here. Simulated/offline tests
-are not live StudioNet consensus evidence.
+The current local run is 56 passing pytest tests, including 14 Direct Mode
+tests, with 45 preflight assertions. Both native validator paths and the
+Windows-only test shim were exercised locally. Simulated/offline tests are not
+live StudioNet consensus evidence; the finalized live receipts are recorded in
+`docs/DEPLOYMENT.md`.

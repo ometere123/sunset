@@ -111,6 +111,9 @@ authenticated DNS owner or final redirect destination; those remain explicit
 trust limitations. Public pages do not independently prove the real-world
 actor, action, identity, source ownership or legal consequence.
 
-No live StudioNet deployment, receipt, address or source-parity claim is made
-until it appears in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) with a finalized,
-successful execution result.
+The finalized StudioNet deployment, source-parity checks and consumer receipts
+are recorded in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The primary release
+address is `0x58EECE051565E256Cf02060E4478900D69fDCfc0`; the final consumer is
+`0xFeFF39c5A3641d28e649e1508B704fa01F0B4DF1`. The explorer service returned
+HTTP 503 during address-page verification, so no address-specific explorer URL
+is claimed here.

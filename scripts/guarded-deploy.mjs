@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-const cli = resolve(root, 'node_modules', '.bin', 'genlayer');
+const cli = resolve(root, 'node_modules', '.bin',
+  process.platform === 'win32' ? 'genlayer.cmd' : 'genlayer');
 const rpc = 'https://studio.genlayer.com/api';
 const chainId = 61999;
 const version = '0.39.1';
@@ -14,7 +15,9 @@ const args = process.argv.slice(3);
 
 function deny(message) { throw new Error(`DEPLOY BLOCKED: ${message}`); }
 function run(params) {
-  const p = spawnSync(cli, params, { cwd: root, encoding: 'utf8' });
+  const p = spawnSync(cli, params, {
+    cwd: root, encoding: 'utf8', shell: process.platform === 'win32',
+  });
   if (p.error || p.status !== 0) deny(`${params.join(' ')} failed: ${p.stderr || p.error}`);
   return `${p.stdout}\n${p.stderr}`;
 }
@@ -56,7 +59,8 @@ console.log(`PRE-SIGN PASS: local genlayer@${version} | studionet ${chainId} | $
 const cmd = ['deploy', '--contract', contract];
 if (args.length) cmd.push('--args', ...args);
 const deployed = spawnSync(cli, cmd, {
-  cwd: root, stdio: 'inherit', env: { ...process.env, GENLAYER_RPC_URL: rpc },
+  cwd: root, stdio: 'inherit', shell: process.platform === 'win32',
+  env: { ...process.env, GENLAYER_RPC_URL: rpc },
 });
 if (deployed.error) deny(deployed.error.message);
 if (deployed.status !== 0) deny(`CLI deploy exited ${deployed.status}`);

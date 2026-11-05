@@ -20,7 +20,10 @@ def _payload_commitment(registry: Address, rule_id: str, fingerprint: str,
                         operation_id: str, payload: str) -> str:
     return Keccak256(json.dumps({
         "domain": "SUNSET_GATE_ACTION_V1",
-        "registry": registry.as_hex,
+        # Address identity is canonicalized to lowercase in the commitment
+        # domain, matching the external commitment helper and avoiding
+        # checksum-casing-dependent action identities.
+        "registry": registry.as_hex.lower(),
         "rule_id": rule_id,
         "fingerprint": fingerprint,
         "operation_id": operation_id,

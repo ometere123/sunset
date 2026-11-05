@@ -10,8 +10,9 @@ Character count, including spaces: 884.
 
 - Repository: https://github.com/ometere123/sunset
 - Network: StudioNet, chain 61999, `https://studio.genlayer.com/api`
-- Primary explorer: NOT YET VERIFIED
-- Consumer explorer: NOT YET VERIFIED
+- Primary contract: `0x58EECE051565E256Cf02060E4478900D69fDCfc0`
+- Consumer contract: `0xFeFF39c5A3641d28e649e1508B704fa01F0B4DF1`
+- Explorer: https://genlayer-explorer.vercel.app (address pages returned HTTP 503 during independent verification)
 
 ## GenLayer-native mechanism
 
@@ -25,8 +26,10 @@ enforcement.
 
 ## Evidence status
 
-The exact offline/Direct Mode/linter/CI counts and any finalized StudioNet
-addresses or receipts are recorded only after execution in `docs/DEPLOYMENT.md`.
-No simulated result is presented as live consensus. Public source material does
-not independently prove a real-world actor, identity, action, source ownership,
-subjective reliance, legal liability or external truth.
+Verification currently records 56 passing pytest tests (14 Direct Mode), 45
+preflight assertions and both contracts passing GenVM linter 0.11.0 under
+runner v0.2.12. Finalized StudioNet deployment, source-parity and consumer
+receipts are recorded in `docs/DEPLOYMENT.md`. No simulated result is presented
+as live consensus. Public source material does not independently prove a
+real-world actor, identity, action, source ownership, subjective reliance,
+legal liability or external truth.
