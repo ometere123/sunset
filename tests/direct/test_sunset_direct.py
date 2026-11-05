@@ -26,6 +26,12 @@ def mock_evidence(direct_vm, status="JUSTIFICATION_PERSISTS", quote=QUOTE):
         r"SUNSET: skeptical",
         json.dumps({"verdict": status, "quote": quote, "reason_code": "OFFICIAL_UPDATE"})
     )
+    if status == "JUSTIFICATION_PERSISTS":
+        direct_vm.mock_llm(
+            r"SUNSET: adversarial",
+            json.dumps({"audit_verdict": "SAFE", "quote": "",
+                        "reason_code": "NO_EXCEPTION_FOUND"})
+        )
 
 
 def test_time_expiry_without_keeper(direct_vm, direct_deploy):
@@ -91,6 +97,76 @@ def test_validator_rejects_disagreement(direct_vm, direct_deploy):
     assert direct_vm.run_validator() is False
 
 
+def test_validator_rejects_malicious_leader_result(direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    mock_evidence(direct_vm)
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    sunset.assess_renewal("inc42", 0, expiry)
+    false_clearance = {
+        "verdict": "JUSTIFICATION_ENDED", "quote": QUOTE,
+        "reason": "OFFICIAL_UPDATE", "source_digest": "0" * 64,
+        "retryable": False, "audit_verdict": "NOT_APPLICABLE", "audit_quote": "",
+    }
+    assert direct_vm.run_validator(leader_result=false_clearance) is False
+    assert sunset.get_rule("inc42")["renewals"] == "1"
+
+
+def test_validator_rejects_malformed_and_extra_leader_fields(direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    mock_evidence(direct_vm)
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    sunset.assess_renewal("inc42", 0, expiry)
+    assert direct_vm.run_validator(leader_result={"verdict": "JUSTIFICATION_PERSISTS"}) is False
+    assert direct_vm.run_validator(leader_result={"verdict": "JUSTIFICATION_PERSISTS",
+                                                   "extra": True}) is False
+
+
+def test_retryable_source_failure_recovers_without_substitution(direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    direct_vm.mock_web(r"status\.example\.org/incidents/inc42",
+                       {"status": 503, "body": ""})
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    assert sunset.assess_renewal("inc42", 0, expiry) == "PROOF_RETRYABLE"
+    assert sunset.get_rule("inc42")["assessment_attempts"] == "1"
+    assert int(sunset.get_rule("inc42")["expires_at"]) == expiry
+    assert sunset.get_assessment_attempt("inc42", 0, 0)["verdict"] == "PROOF_RETRYABLE"
+
+    direct_vm.clear_mocks()
+    mock_evidence(direct_vm)
+    assert sunset.assess_renewal("inc42", 0, expiry) == "JUSTIFICATION_PERSISTS"
+    assert sunset.get_rule("inc42")["assessment_attempts"] == "0"
+    assert int(sunset.get_rule("inc42")["expires_at"]) == expiry + 3600
+
+
+def test_retryable_failures_are_bounded_and_fail_closed(direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    for expected in ("PROOF_RETRYABLE", "INCONCLUSIVE"):
+        direct_vm.clear_mocks()
+        direct_vm.mock_web(r"status\.example\.org/incidents/inc42",
+                           {"status": 503, "body": ""})
+        assert sunset.assess_renewal("inc42", 0, expiry) == expected
+    assert sunset.get_rule("inc42")["assessed_epoch"] == "1"
+    assert sunset.get_rule("inc42")["status"] == "ACTIVE"
+    with direct_vm.expect_revert("STALE_OR_ALREADY_ASSESSED"):
+        sunset.assess_renewal("inc42", 0, expiry)
+
+
+def test_malformed_model_output_is_retryable_not_clearance(direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    direct_vm.mock_web(r"status\.example\.org/incidents/inc42",
+                       {"status": 200, "body": PAGE})
+    direct_vm.mock_llm(r"SUNSET: skeptical", "not-json")
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    assert sunset.assess_renewal("inc42", 0, expiry) == "PROOF_RETRYABLE"
+    assert int(sunset.get_rule("inc42")["expires_at"]) == expiry
+
+
 def test_revoke_owner_only(direct_vm, direct_deploy, direct_owner, direct_alice):
     sunset, _ = setup(direct_vm, direct_deploy)
     direct_vm.sender = direct_alice
@@ -100,6 +176,19 @@ def test_revoke_owner_only(direct_vm, direct_deploy, direct_owner, direct_alice)
     sunset.revoke("inc42")
     assert sunset.is_restricted("inc42") is False
     assert sunset.get_rule("inc42")["status"] == "REVOKED"
+
+
+def test_assessment_owner_only_blocks_third_party_griefing(
+        direct_vm, direct_deploy, direct_owner, direct_alice):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    direct_vm.sender = direct_alice
+    with direct_vm.expect_revert("ONLY_OWNER_ASSESSMENT"):
+        sunset.assess_renewal("inc42", 0, expiry)
+    direct_vm.sender = direct_owner
+    mock_evidence(direct_vm, "INCONCLUSIVE", "")
+    assert sunset.assess_renewal("inc42", 0, expiry) == "INCONCLUSIVE"
 
 
 def test_no_renewal_at_zero_cap(direct_vm, direct_deploy):

@@ -118,7 +118,11 @@ class SunsetTests(unittest.TestCase):
 
     def outcome(self, verdict, quote="Some sufficiently long quoted evidence.", reason="SOURCE_CONFIRMED"):
         return {"verdict": verdict, "source_digest": "a" * 64,
-                "quote": quote, "reason": reason}
+                "quote": quote if verdict != self.mod.INCONCLUSIVE else "",
+                "reason": reason, "retryable": False,
+                "audit_verdict": (self.mod.AUDIT_SAFE if verdict == self.mod.PERSISTS
+                                   else self.mod.AUDIT_NOT_APPLICABLE),
+                "audit_quote": ""}
 
     def assessment(self, verdict, rid="incident-42"):
         rule = self.sunset._rule(rid)
@@ -149,7 +153,11 @@ class SunsetTests(unittest.TestCase):
                 return sunset.is_restricted(name)
 
         module.ISunset = lambda address: Registry()
-        gate = module.SunsetGate(Address("0x" + "c" * 40), rule_id, fingerprint)
+        registry = Address("0x" + "c" * 40)
+        operation_id, payload = "withdrawal-1", "withdrawal:incident-42"
+        commitment = module._payload_commitment(registry, rule_id, fingerprint,
+                                                operation_id, payload)
+        gate = module.SunsetGate(registry, rule_id, fingerprint, self.owner, commitment)
         gate.executed = {}
         return gate
 
@@ -329,9 +337,19 @@ class SunsetTests(unittest.TestCase):
     def test_https_only_and_private_source_rejection(self):
         for url in ("http://status.example.org", "https://localhost/status",
                     "https://127.0.0.1/", "https://internal.local/status",
-                    "https://user:pass@example.org/status", "https://example.org/#fragment"):
+                    "https://user:pass@example.org/status", "https://example.org/#fragment",
+                    "https://example.org/?source=127.0.0.1", "https://example.org:443/status",
+                    "https://[::1]/status", "https://2130706433/status",
+                    "https://127.0.0.1.nip.io/status", "https://example.org/%2fprivate"):
             with self.subTest(url=url):
                 self.assertFalse(self.mod._safe_url(url))
+
+    def test_source_url_is_canonicalized_once(self):
+        self.assertEqual(self.mod._normalize_source_url("https://status.example.org"),
+                         "https://status.example.org/")
+        self.assertEqual(self.mod._normalize_source_url("https://STATUS.example.org"),
+                         "https://status.example.org/")
+        self.assertEqual(self.mod._normalize_source_url(self.source), self.source)
 
     def test_contract_text_and_ids_rejected(self):
         self.assertRejected(self.register, "x")
@@ -372,7 +390,11 @@ class SunsetTests(unittest.TestCase):
         quote = "the affected service remains unavailable"
         self.gl.answers = [
             {"verdict": self.mod.PERSISTS, "quote": quote, "reason_code": "CURRENT_REPORT"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
             {"verdict": self.mod.PERSISTS, "quote": quote, "reason_code": "CURRENT_REPORT"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
         ]
         self.gl.snapshots = [self.gl.page, self.gl.page + " New late update."]
         self.assertRejected(self.sunset._consensus, self.source, self.criteria,
@@ -382,7 +404,11 @@ class SunsetTests(unittest.TestCase):
         quote = "the affected service remains unavailable"
         self.gl.answers = [
             {"verdict": self.mod.PERSISTS, "quote": quote, "reason_code": "CURRENT_REPORT"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
             {"verdict": self.mod.PERSISTS, "quote": quote, "reason_code": "CURRENT_REPORT"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
         ]
         outcome = self.sunset._consensus(self.source, self.criteria,
                                          self.restriction, "2026-10-29T00:00:00+00:00")
@@ -398,22 +424,52 @@ class SunsetTests(unittest.TestCase):
         self.register()
         gate = self.gate()
         self.assertFalse(gate.can_execute())
-        self.assertRejected(gate.execute_once, "withdrawal-1")
+        self.assertFalse(gate.can_execute_bound("withdrawal-1", "withdrawal:incident-42"))
+        self.assertRejected(gate.execute_once, "withdrawal-1", "withdrawal:incident-42")
         self.clock += 100
         self.assertTrue(gate.can_execute())
-        self.assertEqual(gate.execute_once("withdrawal-1"), 1)
+        self.assertTrue(gate.can_execute_bound("withdrawal-1", "withdrawal:incident-42"))
+        self.assertEqual(gate.execute_once("withdrawal-1", "withdrawal:incident-42"), 1)
 
     def test_gate_no_replay_after_expiry(self):
         self.register()
         gate = self.gate()
         self.clock += 100
-        self.assertEqual(gate.execute_once("withdrawal-1"), 1)
-        self.assertRejected(gate.execute_once, "withdrawal-1")
+        self.assertEqual(gate.execute_once("withdrawal-1", "withdrawal:incident-42"), 1)
+        self.assertRejected(gate.execute_once, "withdrawal-1", "withdrawal:incident-42")
         self.assertEqual(gate.execution_count, 1)
 
     def test_gate_constructor_rejects_wrong_fingerprint(self):
         self.register()
         self.assertRejected(self.gate, "incident-42", "a" * 64)
+
+    def test_gate_rejects_substituted_payload_and_unauthorized_executor(self):
+        self.register()
+        gate = self.gate()
+        self.clock += 100
+        self.assertRejected(gate.execute_once, "withdrawal-1", "different-action")
+        self.gl.message.sender_address = Address("0x" + "b" * 40)
+        self.assertRejected(gate.execute_once, "withdrawal-1", "withdrawal:incident-42")
+        self.gl.message.sender_address = self.owner
+        self.assertEqual(gate.execute_once("withdrawal-1", "withdrawal:incident-42"), 1)
+
+    def test_mutation_payload_binding_would_fail_security_regression(self):
+        self.register()
+        gate = self.gate()
+        self.clock += 100
+        # Simulate the critical mutation: accept every payload as the frozen one.
+        gate._payload_commitment = lambda operation_id, payload: gate.expected_action_commitment
+        with self.assertRaises(AssertionError):
+            self.assertRejected(gate.execute_once, "withdrawal-1", "tampered-payload")
+
+    def test_mutation_dynamic_expiry_check_would_fail_security_regression(self):
+        self.register()
+        original_live = self.sunset._live
+        self.sunset._live = lambda rule, timestamp: rule.terminal == self.mod.LIVE
+        self.clock += 100
+        with self.assertRaises(AssertionError):
+            self.assertFalse(self.sunset.is_restricted("incident-42"))
+        self.sunset._live = original_live
 
     def test_gate_open_after_ended_evidence(self):
         self.register()
@@ -421,7 +477,7 @@ class SunsetTests(unittest.TestCase):
         self.clock += 65
         self.assessment(self.mod.ENDED)
         self.assertTrue(gate.can_execute())
-        self.assertEqual(gate.execute_once("withdrawal-2"), 1)
+        self.assertEqual(gate.execute_once("withdrawal-1", "withdrawal:incident-42"), 1)
 
     def test_gate_stays_blocked_after_positive_renewal(self):
         self.register()

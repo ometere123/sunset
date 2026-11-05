@@ -22,9 +22,10 @@ function run(params) {
 if (!['contracts/sunset.py', 'contracts/sunset_gate.py'].includes(contract)) deny('contract not audited');
 if (contract === 'contracts/sunset.py' && args.length) deny('Sunset has no constructor arguments');
 if (contract === 'contracts/sunset_gate.py' &&
-    (args.length !== 3 || !/^0x[0-9a-fA-F]{40}$/.test(args[0]) ||
-     !/^[A-Za-z0-9_-]{3,64}$/.test(args[1]) || !/^[0-9a-fA-F]{64}$/.test(args[2]))) {
-  deny('SunsetGate arguments: contract address, rule ID, 64-character fingerprint');
+    (args.length !== 5 || !/^0x[0-9a-fA-F]{40}$/.test(args[0]) ||
+     !/^[A-Za-z0-9_-]{3,64}$/.test(args[1]) || !/^[0-9a-fA-F]{64}$/.test(args[2]) ||
+     !/^0x[0-9a-fA-F]{40}$/.test(args[3]) || !/^[0-9a-fA-F]{64}$/.test(args[4]))) {
+  deny('SunsetGate arguments: registry address, rule ID, fingerprint, executor address, action commitment');
 }
 for (const [key, value] of [
   ['GENLAYER_RPC_URL', rpc], ['GENLAYER_CHAIN_ID', String(chainId)],

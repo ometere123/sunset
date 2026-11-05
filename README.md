@@ -1,123 +1,116 @@
-# SUNSET — Emergency powers that expire unless justified again
+# SUNSET — bounded, consensus-backed expiry of temporary restrictions
 
-> **Invariant:** A temporary restriction becomes inoperative at its on-chain
-> deadline without any cleanup transaction. Only independently verified,
-> current evidence satisfying a *frozen continuation criterion* can extend
-> it — by exactly one precommitted epoch, within an immutable lifetime cap.
+Sunset is a reusable GenLayer Intelligent Contract primitive for temporary
+restrictions that expire unless an immutable continuation rule is independently
+supported again. A rule owner commits the restriction, criterion, public HTTPS
+source, epoch, renewal window and lifetime cap. GenLayer leader and validator
+paths independently fetch and classify that same frozen source; deterministic
+contract code alone controls whether one fixed epoch is renewed or the rule
+falls toward expiry.
 
-Sunset is a reusable **GenLayer Intelligent Contract primitive** for expiring
-temporary restrictions: emergency withdrawal limits, incident controls,
-special administrative permissions, access suspensions, and other time-bound
-governance measures. It is **contract-only**: no frontend, no backend,
-no off-chain authority and no Docker requirement.
+This is a protocol for bounded on-chain enforcement, not proof of website
+ownership, real-world identity, action completion, subjective reliance, legal
+liability or external truth.
 
-The interesting mechanism is the **default-to-expiration safety property**.
-GenLayer consensus only interprets evidence relative to an immutable rule; a
-small deterministic state machine controls deadlines, replay resistance,
-authorization, and the maximum possible lifetime.
+## Security invariant
 
-| Evidence conclusion | Effect |
-|---|---|
-| `JUSTIFICATION_PERSISTS` | Extend exactly one original epoch, subject to hard cap |
-| `JUSTIFICATION_ENDED` | Mark terminal and stop restricting immediately |
-| `INCONCLUSIVE` | Never extend; restriction dies at current deadline |
-| No assessment / failed consensus | No state change; deadline still arrives |
+At every execution-time read, a rule is restricted only while its terminal state
+is `LIVE` and the transaction timestamp is before both its current expiry and
+immutable hard stop. No cleanup transaction is needed. Only an exactly agreed
+`JUSTIFICATION_PERSISTS` result can extend the previous expiry by one original
+epoch. `JUSTIFICATION_ENDED` ends the rule immediately. `INCONCLUSIVE`, failed
+consensus, unavailable evidence and unresolved recovery never extend it.
 
-**Network locked:** `studionet`, chain **61999**,
-RPC `https://studio.genlayer.com/api`. The repository depends on local,
-**stable GenLayer CLI 0.39.1**, not a global CLI or a release candidate.
+## Lifecycle
 
-## The mechanism
+1. The owner registers a unique rule. The source URL is canonicalized to a
+   conservative HTTPS form and the fingerprint binds every immutable term.
+2. The owner may request an assessment only inside the fixed renewal window,
+   with the expected epoch and expiry. This owner authentication prevents a
+   third party from consuming another party's recovery allowance during an
+   outage.
+3. The leader fetches the source and runs the primary semantic classification.
+   A positive result receives one bounded adversarial compatible-reading audit.
+4. The validator independently repeats the source fetch, primary classification
+   and positive audit. It accepts only an exact, typed match of the full result,
+   including source digest, witness quote, reason, retryability and audit.
+5. A transient fetch/model/audit failure returns `PROOF_RETRYABLE` without
+   changing the expiry. At most two such attempts exist for an epoch; exhaustion
+   finalizes `INCONCLUSIVE`. A genuine semantic `INCONCLUSIVE` is terminal for
+   that epoch immediately.
+6. Consumers read the rule at execution time. `SunsetGate` additionally binds a
+   typed registry address, rule fingerprint, executor address and a domain-
+   separated commitment to one exact operation ID and payload.
 
-1. A rule owner commits to a restriction, the exact public HTTPS evidence
-   source, a continuation criterion, an epoch duration, an assessment window
-   and a maximum number of renewals.
-2. A rule begins active with its first epoch's deadline. Its immutable
-   fingerprint binds all original terms and the owner.
-3. In the final renewal window, **any wallet** may request an assessment,
-   supplying the expected epoch and deadline (optimistic concurrency guard).
-4. The leader and validators independently fetch the frozen source, compare
-   source digests and independently classify the same immutable question.
-   Decisive judgments carry a verbatim excerpt. Disagreement cannot certify
-   an extension.
-5. The contract applies exactly one of the three fixed outcomes. No owner,
-   caller or LLM can extend the epoch length, modify the criterion, switch
-   the source, resurrect an expired rule, or breach the absolute hard stop.
-6. Consumers call `is_restricted(id)` at execution time. At or after expiry
-   it returns false *even if nobody calls* `seal_expired`.
+## Public contracts
 
-The rule owner may **revoke early**, never prolong directly. There is no
-administrator override and no rule-editing API. An `INCONCLUSIVE` assessment
-consumes its epoch attempt; callers cannot repeatedly sample models until they
-obtain a favourable renewal verdict.
+`contracts/sunset.py` exposes `register_rule`, `assess_renewal`, `revoke`,
+`seal_expired`, `is_restricted`, `get_rule`, `get_assessment` and
+`get_assessment_attempt`. Rule terms, evidence namespace and hard stop are
+immutable after registration. Assessment receipts preserve each bounded
+attempt.
 
-## Repository
+`contracts/sunset_gate.py` is a minimal interoperability consumer. Its
+constructor verifies the registry, rule and fingerprint, then freezes the
+executor and action commitment. `execute_once(operation_id, payload)` fails
+closed on an active/unverifiable rule, wrong executor, substituted payload or
+replay. It moves no funds and is not a wallet, escrow or application backend.
 
-| Path | Purpose |
-|---|---|
-| `contracts/sunset.py` | Main intelligent contract and standalone registry |
-| `contracts/sunset_gate.py` | Immutable-fingerprint IC consumer; a demonstrator, not a transfer contract |
-| `tests/test_offline.py` | Executable state-machine / adversarial shim tests |
-| `tests/direct/` | Official GenLayer Direct Mode tests |
-| `scripts/preflight.py` | Offline network/structure/security assertions |
-| `scripts/guarded-deploy.mjs` | Fail-closed local CLI + live chain pre-sign guard |
-| `docs/` | Consensus rules, security, deployment, reviewer walkthrough |
+Compute the exact consumer binding with:
 
-## Setup and verification
+```bash
+node scripts/action_commitment.mjs <registry> <rule-id> <fingerprint> <operation-id> <payload>
+```
 
-Requirements: Python 3.12+, Node 20+, an ordinary Git checkout.
+## Locked environment
+
+- Network: `studionet`
+- Chain ID: `61999` (`0xf22f`)
+- RPC: `https://studio.genlayer.com/api`
+- Repository-local CLI: `genlayer@0.39.1`
+- GenVM linter: `0.11.0`
+- Direct Mode: `genlayer-test==0.29.2`
+- Stable Direct Mode runner: `v0.2.12`
+
+The global GenLayer CLI is not used. There is no frontend, backend, database,
+Docker service, scheduler dependency, custody or application wallet UI.
+
+## Verification
 
 ```bash
 npm ci
 python3 -m pip install -r requirements-dev.txt
 python3 scripts/preflight.py
+python3 -m compileall -q contracts scripts tests
 python3 -B -m unittest discover -s tests -p test_offline.py -v
-genvm-lint check contracts/sunset.py
-genvm-lint check contracts/sunset_gate.py
-genvm-lint schema contracts/sunset.py
-genvm-lint schema contracts/sunset_gate.py
+GENVM_VERSION=v0.2.12 genvm-lint check contracts/sunset.py
+GENVM_VERSION=v0.2.12 genvm-lint check contracts/sunset_gate.py
+GENVM_VERSION=v0.2.12 genvm-lint schema contracts/sunset.py
+GENVM_VERSION=v0.2.12 genvm-lint schema contracts/sunset_gate.py
 python3 -m pytest -q tests/direct
 python3 scripts/source_hashes.py
+node scripts/assert_studionet.mjs
 ```
 
-The CLI is invoked at `./node_modules/.bin/genlayer`. Check the selected
-network before signing:
+The repository's verified Direct Mode command is `python3 -m pytest -q
+tests/direct`; the commonly shown `gltest direct_tests -v -s` command is not
+applicable because this repository uses the pinned pytest plugin layout. The
+Direct Mode suite explicitly calls `direct_vm.run_validator()` where supported.
+On Windows, `tests/direct/conftest.py` is a test-only compatibility shim for a
+file-unlink defect in genlayer-test 0.29.2; it is inactive on CI's Linux runner.
 
-```bash
-./node_modules/.bin/genlayer network set studionet
-./node_modules/.bin/genlayer network info
-npm run deploy:sunset
-```
+## Evidence and limitations
 
-`deploy:sunset` rechecks the installed CLI package, selected network alias,
-RPC URL, and an independent live `eth_chainId` response **before** the
-CLI can send a deployment. It requires an unlocked/funded local account.
-Never interpret a submitted transaction or an `ACCEPTED` response as
-`FINALIZED` success.
+Public HTTPS material is treated as untrusted data and is independently
+retrieved by leader and validator. Exact quotes must occur in the retrieved,
+whitespace-normalized extract. The source URL filter rejects credentials,
+explicit ports, queries, fragments, percent-encoding, IP literals, private
+namespaces and common DNS-to-private-IP wrapper domains. The GenVM v0.2.12 web
+response exposes status, headers and body but not a cryptographically
+authenticated DNS owner or final redirect destination; those remain explicit
+trust limitations. Public pages do not independently prove the real-world
+actor, action, identity, source ownership or legal consequence.
 
-After registering a demonstration rule, deploy the optional consumer:
-
-```bash
-npm run deploy:gate -- 0xSUNSET_ADDRESS rule-id EXACT_64_HEX_FINGERPRINT
-```
-
-The gate binds to the registry address, rule ID and fingerprint in its
-constructor. It refuses actions while the rule is active, and permits them
-after the deadline *without requiring anyone to settle expiry*. It contains
-no funds and has no mutable owner switch. See [reviewer demo](docs/REVIEWER_DEMO.md).
-
-## What Sunset does **not** assert
-
-- A consensus certificate means validators independently agreed under the
-  specified evidence procedure. It is not proof that a website is authentic,
-  that an incident exists, or that a policy is lawful.
-- Rules are only restrictions **inside applications that voluntarily integrate
-  the gate**. Registering a rule does not seize rights over unrelated wallets.
-- The first 12,000 decoded characters of the source are assessed. Dynamic or
-  inconsistent pages can cause inconclusive results, which fail toward expiry.
-- Time follows the GenVM transaction timestamp, not the validator machine's
-  wall clock. Deployment finality and liveness have separate limitations.
-
-Deployment IDs, validator votes, transaction hashes and source-parity evidence
-are never assumed. See [deployment evidence](docs/DEPLOYMENT.md) for the
-verification gates that must be completed with a real StudioNet wallet.
+No live StudioNet deployment, receipt, address or source-parity claim is made
+until it appears in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) with a finalized,
+successful execution result.

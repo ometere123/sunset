@@ -1,63 +1,83 @@
-# Deployment and verification record
+# Deployment and live verification ledger
 
-**Target only:** StudioNet (`studionet`), chain **61999**,
-`https://studio.genlayer.com/api`; local `genlayer@0.39.1`.
-Never reuse addresses or receipts from a different network.
+This file is an evidence ledger, not a template for invented receipts.
+Deployment is permitted only on stable StudioNet:
 
-## Required execution
+- network: `studionet`
+- chain ID: `61999` / `0xf22f`
+- RPC: `https://studio.genlayer.com/api`
+- local CLI: repository `genlayer@0.39.1`
+- contract runner: pinned header and Direct Mode SDK `v0.2.12`
+
+## Predeployment gate
 
 ```bash
 npm ci
 python3 -m pip install -r requirements-dev.txt
 python3 scripts/preflight.py
 python3 -B -m unittest discover -s tests -p test_offline.py -v
-genvm-lint check contracts/sunset.py
-genvm-lint check contracts/sunset_gate.py
-genvm-lint schema contracts/sunset.py
-genvm-lint schema contracts/sunset_gate.py
+GENVM_VERSION=v0.2.12 genvm-lint check contracts/sunset.py
+GENVM_VERSION=v0.2.12 genvm-lint check contracts/sunset_gate.py
 python3 -m pytest -q tests/direct
-./node_modules/.bin/genlayer network set studionet
-./node_modules/.bin/genlayer network info
-npm run deploy:sunset
+node scripts/assert_studionet.mjs
 ```
 
-The guarded deploy script independently queries `eth_chainId`, checks that
-CLI network info matches the exact stable endpoint, and verifies local package
-version before touching the deploy command. The CLI may prompt for account
-unlock. No account password, seed phrase, token, or private key belongs in
-this repository or CI.
+`scripts/guarded-deploy.mjs` repeats local CLI/package/network checks and makes
+an independent `eth_chainId` request before invoking the local deploy binary.
+It never accepts Studio Dev, Studio Next or chain 61997. No secret, private key
+or password is stored in this repository or CI.
 
-## Production evidence ledger
-
-Fill in the following **only from actual observations**:
+## Finalized evidence
 
 | Field | Verified value |
 |---|---|
-| Contract source SHA-256 | Run `python3 scripts/source_hashes.py` |
-| StudioNet RPC / chain | `https://studio.genlayer.com/api` / 61999 |
-| CLI package | `genlayer@0.39.1` (repository-local) |
-| Sunset deployment tx | NOT YET VERIFIED |
-| Sunset IC address | NOT YET VERIFIED |
-| Finality + execution result | NOT YET VERIFIED |
-| On-chain code/source byte parity | NOT YET VERIFIED |
-| Rule registration receipt | NOT YET VERIFIED |
-| PERSISTS/ENDED/INCONCLUSIVE lifecycle | NOT YET VERIFIED |
-| Optional SunsetGate address | NOT YET VERIFIED |
-| Gate after-expiry operation receipt | NOT YET VERIFIED |
+| Final branch / commit | NOT YET VERIFIED |
+| `contracts/sunset.py` SHA-256 | NOT YET VERIFIED |
+| `contracts/sunset_gate.py` SHA-256 | NOT YET VERIFIED |
+| Local CLI version | `genlayer@0.39.1` verified locally |
+| GenVM linter | `0.11.0`, result pending final run |
+| Sunset address | NOT YET VERIFIED |
+| Sunset deployment transaction | NOT YET VERIFIED |
+| Sunset finality and execution | NOT YET VERIFIED |
+| Sunset explorer | NOT YET VERIFIED |
+| SunsetGate address | NOT YET VERIFIED |
+| SunsetGate deployment transaction | NOT YET VERIFIED |
+| SunsetGate finality and execution | NOT YET VERIFIED |
+| Consumer explorer | NOT YET VERIFIED |
+| On-chain source byte parity | NOT YET VERIFIED |
 
-Deployment verification must establish a successful *execution* and status
-`FINALIZED`, not merely acceptance or existence of a ghost/address. Query
-the deployed contract code using the local CLI's `code` command or the
-GenLayer RPC, verify it exactly matches the committed UTF-8 source bytes,
-and record the resulting digest plus explorer receipt.
+Only a finalized receipt with successful execution may fill these fields.
+`ACCEPTED`, a submitted hash, an address with no successful code deployment or
+an asynchronous status is not a proof of deployment success.
 
-The consumer must only be deployed after Sunset and a real registered rule
-exist. Its constructor arguments are the exact Sunset address, rule ID, and
-fingerprint from `get_rule`.
+The primary deployment command is:
 
-### Hard stop
+```bash
+npm run deploy:sunset
+```
 
-If the local account cannot be unlocked, lacks GEN, the network guard fails,
-the official runtime cannot be installed, or the transaction never finalizes,
-stop and report the specific blocker. Do not invent a deployment address,
-validator agreement, test count or chain receipt.
+The consumer command requires all frozen bindings, including the executor and
+action commitment:
+
+```bash
+npm run deploy:gate -- <sunset-address> <rule-id> <fingerprint> <executor-address> <action-commitment>
+```
+
+## Required live sequence
+
+After deployment, record each transaction hash and readback separately:
+
+1. register a bounded rule from the deployment signer;
+2. read its owner, immutable fingerprint, source and deadlines;
+3. exercise owner assessment with independently retrievable public evidence;
+4. record positive renewal, ended, semantic inconclusive and transient recovery
+   behavior where each transaction actually finalizes;
+5. deploy a gate with the exact registry/rule/fingerprint/executor/action
+   commitment;
+6. prove active-rule rejection, exact cleared action success, unauthorized
+   executor rejection, payload substitution rejection and replay rejection; and
+7. fetch the deployed source/code using the stable RPC/CLI and compare exact
+   bytes and SHA-256 against the final committed files.
+
+If any step cannot be independently verified, it remains `NOT YET VERIFIED` in
+this ledger and in the final release report.

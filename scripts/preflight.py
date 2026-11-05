@@ -10,13 +10,17 @@ SDK_HEADER = '# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jq
 
 def main():
     package = json.loads((ROOT / "package.json").read_text())
-    assert package["devDependencies"] == {"genlayer": "0.39.1"}
+    assert package["devDependencies"] == {
+        "@noble/hashes": "1.3.2", "genlayer": "0.39.1"
+    }
     assert package["config"] == {
         "network": "studionet", "chainId": 61999,
         "rpc": "https://studio.genlayer.com/api"
     }
-    assert not (ROOT / "frontend").exists()
-    checks = 4
+    for forbidden in ("frontend", "backend", "database", "docker-compose.yml",
+                      "Dockerfile"):
+        assert not (ROOT / forbidden).exists(), forbidden
+    checks = 9
     for filename, target in (("sunset.py", "Sunset"), ("sunset_gate.py", "SunsetGate")):
         source = (ROOT / "contracts" / filename).read_text()
         assert source.startswith(SDK_HEADER)
@@ -32,11 +36,15 @@ def main():
         "run_nondet_unsafe", "source_digest", "expected_epoch", "expected_expiry",
         "hard_stop", "INCONCLUSIVE", "STALE_AFTER_CONSENSUS",
         "timestamp < int(rule.expiry)", "current.expiry = u256(next_expiry)",
+        "MAX_RECOVERY_ATTEMPTS", "ONLY_OWNER_ASSESSMENT", "AUDIT_SAFE",
+        "_normalize_source_url", "SUNSET_RULE_FINGERPRINT_V1",
     ):
         assert fragment in contract, fragment
         checks += 1
     gate = (ROOT / "contracts/sunset_gate.py").read_text()
-    for fragment in ("rule_fingerprint", "is_restricted", "REPLAY"):
+    for fragment in ("rule_fingerprint", "is_restricted", "REPLAY",
+                     "ACTION_COMMITMENT_MISMATCH", "ONLY_EXECUTOR",
+                     "SUNSET_GATE_ACTION_V1"):
         assert fragment in gate
         checks += 1
     guard = (ROOT / "scripts/guarded-deploy.mjs").read_text()
@@ -44,6 +52,10 @@ def main():
                      "https://studio.genlayer.com/api"):
         assert fragment in guard
         checks += 1
+    assert "0xf22f" in (ROOT / "scripts/assert_studionet.mjs").read_text()
+    checks += 1
+    assert "SUNSET_GATE_ACTION_V1" in (ROOT / "scripts/action_commitment.mjs").read_text()
+    checks += 1
     print(f"PASS: {checks} structural / network / security assertions")
 
 

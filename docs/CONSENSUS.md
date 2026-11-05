@@ -1,56 +1,68 @@
-# Consensus specification
+# Consensus and deterministic state machine
 
-The question is **not** whether an AI believes a restriction is useful.
-The frozen question is: *Does affirmative, fresh evidence at the original
-public HTTPS source establish that the original continuation condition
-continues to hold at the assessment timestamp?*
+SUNSET asks one frozen question: does fresh, affirmative evidence at the
+registered HTTPS source establish that the original continuation criterion still
+holds at the assessment timestamp?
 
-The three categories are ordered as independent symbols; no score or arbitrary
-confidence threshold may choose an extension.
+## Leader and validator paths
 
-| Verdict | Required observation | Deterministic result |
+`Sunset._consensus` freezes URL, criterion, restriction and UTC timestamp in a
+tuple before calling `gl.vm.run_nondet_unsafe`. The leader and validator each
+execute `_observe` independently. `_observe`:
+
+1. performs `gl.nondet.web.get` against the immutable URL;
+2. requires HTTP 200 and rejects an explicit redirect location header;
+3. normalizes at most 12,000 decoded characters and computes the
+   domain-separated `SUNSET_SOURCE_SNAPSHOT_V1` digest;
+4. runs `_prompt` with the criterion and restriction inside escaped,
+   explicitly untrusted source tags;
+5. validates the exact JSON schema and an exact 12–220 character witness; and
+6. when the primary result is positive, runs `_audit_prompt` once to search for
+   exceptions, changed actors/dates/subjects, selective quotation, stale source
+   context or a compatible reading that defeats persistence.
+
+The validator does not inspect only the leader's shape. It independently
+re-fetches, re-prompts and re-audits. `_valid_result` rejects extra fields,
+wrong types, invalid enums, invalid hashes, missing witnesses and inconsistent
+audit/retryability combinations. The validator accepts only exact equality of
+the complete independently derived result. A leader claiming persistence while
+the validator sees an ended, vetoed, changed or unavailable source therefore
+cannot produce an accepted renewal.
+
+## Result mapping
+
+| Result | Meaning | State transition |
 |---|---|---|
-| JUSTIFICATION_PERSISTS | Current affirmative support, direct source quote | old expiry + fixed epoch |
-| JUSTIFICATION_ENDED | Current affirmative resolution, direct source quote | terminal, expiry now |
-| INCONCLUSIVE | Insufficient, stale, conflicting, unavailable evidence | current expiry unchanged; epoch attempt consumed |
+| `JUSTIFICATION_PERSISTS` | independently supported persistence and `SAFE` audit | extend prior expiry by exactly one original epoch |
+| `JUSTIFICATION_ENDED` | independently supported resolution | terminal `ENDED_EARLY`, expiry now |
+| `INCONCLUSIVE` | semantic uncertainty, missing witness, audit veto, or exhausted recovery | no extension; assessment epoch is consumed |
+| `PROOF_RETRYABLE` | matching transient source/model/audit infrastructure failure | no extension; bounded owner-only retry remains |
 
-For each assessment:
+`PERSISTS` and `ENDED` are terminal for that assessment epoch. A semantic
+`INCONCLUSIVE` is also terminal. Only a `PROOF_RETRYABLE` result may be retried,
+and only by the registered owner, up to `MAX_RECOVERY_ATTEMPTS == 2`. A second
+matching transient failure finalizes `INCONCLUSIVE`; it never becomes a
+clearance. Each attempt is stored under a unique `rule:epoch:attempt` receipt.
 
-1. The deterministic precheck verifies an active rule, matching epoch and
-   deadline, unused assessment slot, remaining renewal capacity and permitted
-   renewal window.
-2. The leader fetches the immutable URL, extracts at most 12,000 characters,
-   normalizes whitespace, hashes the normalized extract with Keccak-256, and
-   asks a narrow, injection-aware question about the frozen criterion.
-3. A decisive answer must contain a direct contiguous source quote of 12–220
-   characters and a bounded reason code. Unsupported output normalizes to
-   INCONCLUSIVE.
-4. Each validator independently re-fetches the source and asks the same
-   semantic question. It checks exact source digest, exact categorical verdict,
-   and matching verbatim quote for a decisive result.
-5. Only a consensus-accepted result reaches deterministic state transitions.
-   Recheck the epoch and expiry after consensus. The receipt binds the assessed
-   epoch, old and resulting deadlines, outcome, source digest and excerpt.
+## Deterministic enforcement
 
-An unavailable source may deterministically yield INCONCLUSIVE if validators
-observe the same unavailable extract. A source that changes during verification
-may produce disagreement and no accepted write. **Both situations still result
-in natural expiry** unless a successful renewal transaction is finalized first.
+Before consensus, `assess_renewal` verifies owner identity, live status, exact
+expected epoch/expiry, unused slot, cap and inclusive renewal window. After
+consensus it reloads the rule and checks the same optimistic-concurrency head,
+terminal status and live timestamp. This prevents a proof that finishes after
+the deadline from extending an expired rule. Expiry and hard stop are ordinary
+state comparisons; the model never chooses a timestamp or epoch length.
 
-Positive assessments may advance `renewals` by one, up to the cap. The absolute
-`hard_stop` is committed at registration as `created + epoch * (cap + 1)`.
-Repeated attempts cannot extend beyond it. An ended or revoked rule is terminal.
+The owner may revoke early. Any caller may archive an already expired rule with
+`seal_expired`, but archival history does not affect `is_restricted`. There is
+no administrator override, source replacement or rule-editing method.
 
-No model sets an expiry, votes for a governance amendment, chooses a beneficiary,
-or awards funds. The classifier only returns a bounded evidence relationship.
+## Evidence boundary
 
-### Known limits
-
-- Exact source digest agreement prioritizes safety over liveness on volatile
-  pages. Some dynamic status pages are unsuitable for this primitive.
-- Evidence is public; source authenticity, truthful publisher operation and
-  source continuity are integration concerns.
-- The source may change after an assessment; its digest and excerpt provide
-  an audit witness, not immutable storage of the whole webpage.
-- No live observability is promised when the source cannot be reached or a
-  transaction cannot finalize. Expiry remains the fallback.
+The URL filter is conservative: HTTPS only; no credentials, explicit ports,
+queries, fragments, percent-encoding, IP literals, local/private suffixes or
+common DNS-to-private-IP wrappers. The runtime response type for pinned runner
+`v0.2.12` exposes status, headers and body but not proof of DNS ownership or a
+final redirect destination. Consequently source ownership, publisher identity,
+real-world action, identity, subjective reliance and legal liability remain
+outside the contract guarantee.
