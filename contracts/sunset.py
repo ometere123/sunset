@@ -133,18 +133,33 @@ def _material_digest(url: str, page: str, quote: str) -> str:
     })
 
 
+def _json_object(raw):
+    """Normalize JSON-mode model output without trusting incidental fields."""
+    if isinstance(raw, str):
+        text = raw.strip()
+        if text.startswith("```"):
+            lines = text.splitlines()
+            if lines and lines[0].strip().startswith("```"):
+                lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            text = "\n".join(lines).strip()
+        try:
+            raw = json.loads(text)
+        except (ValueError, TypeError):
+            return None
+    return raw if isinstance(raw, dict) else None
+
+
 def _classify(raw, page: str) -> dict:
     """A decisive result must carry a short verbatim witness from the source."""
-    if isinstance(raw, str):
-        try:
-            raw = json.loads(raw)
-        except (ValueError, TypeError):
-            raw = None
+    raw = _json_object(raw)
     bad = {"verdict": INCONCLUSIVE, "quote": "", "reason": "MALFORMED",
            "retryable": True}
-    if not isinstance(raw, dict) or set(raw) != {"verdict", "quote", "reason_code"}:
+    if not isinstance(raw, dict) or "verdict" not in raw or "quote" not in raw:
         return bad
-    verdict, quote, reason = raw["verdict"], raw["quote"], raw["reason_code"]
+    reason = raw.get("reason_code", raw.get("reason"))
+    verdict, quote = raw["verdict"], raw["quote"]
     if verdict not in VERDICTS or not isinstance(quote, str) or not isinstance(reason, str):
         return bad
     if (len(quote) > MAX_QUOTE or not (1 <= len(reason) <= 48)
@@ -164,15 +179,12 @@ def _classify(raw, page: str) -> dict:
 
 
 def _classify_audit(raw, page: str) -> dict:
-    if isinstance(raw, str):
-        try:
-            raw = json.loads(raw)
-        except (ValueError, TypeError):
-            raw = None
-    if not isinstance(raw, dict) or set(raw) != {"audit_verdict", "quote", "reason_code"}:
+    raw = _json_object(raw)
+    if not isinstance(raw, dict) or "audit_verdict" not in raw or "quote" not in raw:
         return {"audit_verdict": AUDIT_UNCERTAIN, "quote": "", "reason": "MALFORMED",
                 "retryable": True}
-    verdict, quote, reason = raw["audit_verdict"], raw["quote"], raw["reason_code"]
+    reason = raw.get("reason_code", raw.get("reason"))
+    verdict, quote = raw["audit_verdict"], raw["quote"]
     if (verdict not in (AUDIT_SAFE, AUDIT_VETO, AUDIT_UNCERTAIN)
             or not isinstance(quote, str) or not isinstance(reason, str)
             or not (1 <= len(reason) <= 48) or not reason.isascii()

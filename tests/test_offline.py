@@ -384,6 +384,16 @@ class SunsetTests(unittest.TestCase):
         raw = {"verdict": self.mod.PERSISTS, "quote": quote, "reason_code": "CURRENT_REPORT"}
         self.assertEqual(self.mod._classify(raw, self.gl.page)["verdict"], self.mod.PERSISTS)
 
+    def test_json_normalization_ignores_incidental_model_fields(self):
+        quote = "the affected service remains unavailable"
+        raw = {"verdict": self.mod.PERSISTS, "quote": quote,
+               "reason_code": "CURRENT_REPORT", "explanation": "ignored"}
+        self.assertEqual(self.mod._classify(raw, self.gl.page)["verdict"], self.mod.PERSISTS)
+        fenced = ('```json\n{"verdict":"JUSTIFICATION_ENDED",'
+                  '"quote":"recovery work is ongoing",'
+                  '"reason":"RESOLVED_REPORT"}\n```')
+        self.assertEqual(self.mod._classify(fenced, self.gl.page)["verdict"], self.mod.ENDED)
+
     def test_validator_independently_rechecks_status(self):
         self.register()
         quote = "the affected service remains unavailable"
