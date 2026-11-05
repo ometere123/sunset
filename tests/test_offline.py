@@ -29,8 +29,12 @@ class Return:
 
 
 class Response:
-    def __init__(self, content):
+    def __init__(self, content, status=200, headers=None, url=None, history=None):
         self.body = content.encode("utf-8")
+        self.status = status
+        self.headers = headers or {}
+        self.url = url
+        self.history = history
 
 
 class FakeGl:
@@ -62,7 +66,12 @@ class FakeGl:
 
     def fetch(self, url):
         if self.snapshots:
-            return Response(self.snapshots.pop(0))
+            snapshot = self.snapshots.pop(0)
+            if isinstance(snapshot, dict):
+                return Response(snapshot.get("body", ""), snapshot.get("status", 200),
+                                snapshot.get("headers"), snapshot.get("url"),
+                                snapshot.get("history"))
+            return Response(snapshot)
         return Response(self.page)
 
     def prompt(self, text, response_format=None):
@@ -396,9 +405,115 @@ class SunsetTests(unittest.TestCase):
             {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
              "reason_code": "NO_EXCEPTION_FOUND"},
         ]
-        self.gl.snapshots = [self.gl.page, self.gl.page + " New late update."]
+        changed = self.gl.page.replace(
+            "recovery work is ongoing", "recovery work has ended"
+        )
+        self.gl.snapshots = [self.gl.page, changed, changed]
         self.assertRejected(self.sunset._consensus, self.source, self.criteria,
                             self.restriction, "2026-10-29T00:00:00+00:00")
+
+    def test_nonmaterial_page_difference_does_not_break_consensus(self):
+        quote = "the affected service remains unavailable"
+        self.gl.page = ("Historical context. " * 30) + self.gl.page + (" Archived note. " * 30)
+        self.gl.answers = [
+            {"verdict": self.mod.PERSISTS, "quote": quote,
+             "reason_code": "CURRENT_REPORT"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
+            {"verdict": self.mod.PERSISTS, "quote": quote,
+             "reason_code": "FRESH_STATUS"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
+        ]
+        changed = self.gl.page + " Unrelated navigation banner updated."
+        self.gl.snapshots = [self.gl.page, changed, changed]
+        result = self.sunset._consensus(
+            self.source, self.criteria, self.restriction,
+            "2026-10-29T00:00:00+00:00"
+        )
+        self.assertEqual(result["verdict"], self.mod.PERSISTS)
+
+    def test_same_positive_verdict_allows_different_valid_quotes_and_reasons(self):
+        quote_one = "the affected service remains unavailable"
+        quote_two = "recovery work is ongoing"
+        self.gl.page += " Official status remains current."
+        self.gl.answers = [
+            {"verdict": self.mod.PERSISTS, "quote": quote_one,
+             "reason_code": "CURRENT_REPORT"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
+            {"verdict": self.mod.PERSISTS, "quote": quote_two,
+             "reason_code": "FRESH_STATUS"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "QUALIFICATIONS_REVIEWED"},
+        ]
+        result = self.sunset._consensus(
+            self.source, self.criteria, self.restriction,
+            "2026-10-29T00:00:00+00:00"
+        )
+        self.assertEqual(result["verdict"], self.mod.PERSISTS)
+
+    def test_same_ended_verdict_allows_different_valid_quotes_and_reasons(self):
+        quote_one = "the affected service remains unavailable"
+        quote_two = "recovery work is ongoing"
+        self.gl.page += " Official status remains current."
+        self.gl.answers = [
+            {"verdict": self.mod.ENDED, "quote": quote_one,
+             "reason_code": "RESOLVED_REPORT"},
+            {"verdict": self.mod.ENDED, "quote": quote_two,
+             "reason_code": "FRESH_STATUS"},
+            {"audit_verdict": self.mod.AUDIT_SAFE, "quote": "",
+             "reason_code": "NO_EXCEPTION_FOUND"},
+        ]
+        result = self.sunset._consensus(
+            self.source, self.criteria, self.restriction,
+            "2026-10-29T00:00:00+00:00"
+        )
+        self.assertEqual(result["verdict"], self.mod.ENDED)
+
+    def test_inconclusive_quote_is_normalized_to_terminal_uncertainty(self):
+        result = self.mod._classify(
+            {"verdict": self.mod.INCONCLUSIVE,
+             "quote": "misleading but nondecisive text",
+             "reason_code": "AMBIGUOUS"},
+            self.gl.page,
+        )
+        self.assertEqual(result["verdict"], self.mod.INCONCLUSIVE)
+        self.assertEqual(result["quote"], "")
+        self.assertFalse(result["retryable"])
+
+    def test_audit_uncertainty_without_quote_is_valid_and_fail_closed(self):
+        audit = self.mod._classify_audit(
+            {"audit_verdict": self.mod.AUDIT_UNCERTAIN,
+             "quote": "", "reason_code": "AMBIGUOUS_CONTEXT"},
+            self.gl.page,
+        )
+        self.assertFalse(audit["retryable"])
+        result = {
+            "verdict": self.mod.INCONCLUSIVE, "quote": "",
+            "reason": audit["reason"], "source_digest": "a" * 64,
+            "retryable": False, "audit_verdict": audit["audit_verdict"],
+            "audit_quote": audit["quote"],
+        }
+        self.assertTrue(self.mod.Sunset()._valid_result(result))
+
+    def test_redirect_and_http_error_are_retryable_without_clearance(self):
+        self.gl.snapshots = [
+            {"status": 302, "body": "", "headers": {"location": "https://other.example"}},
+        ]
+        redirect = self.sunset._observe(
+            self.source, self.criteria, self.restriction,
+            "2026-10-29T00:00:00+00:00"
+        )
+        self.assertEqual(redirect["reason"], "SOURCE_HTTP_STATUS")
+        self.assertTrue(redirect["retryable"])
+        self.gl.snapshots = [{"status": 503, "body": ""}]
+        error = self.sunset._observe(
+            self.source, self.criteria, self.restriction,
+            "2026-10-29T00:00:00+00:00"
+        )
+        self.assertEqual(error["reason"], "SOURCE_HTTP_STATUS")
+        self.assertTrue(error["retryable"])
 
     def test_matching_independent_source_and_verdict_passes(self):
         quote = "the affected service remains unavailable"

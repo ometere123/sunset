@@ -112,6 +112,43 @@ def test_validator_rejects_malicious_leader_result(direct_vm, direct_deploy):
     assert sunset.get_rule("inc42")["renewals"] == "1"
 
 
+def test_validator_rejects_unsupported_positive_proposal(direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    mock_evidence(direct_vm)
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    sunset.assess_renewal("inc42", 0, expiry)
+    fabricated = {
+        "verdict": "JUSTIFICATION_PERSISTS",
+        "quote": "fabricated evidence not on source",
+        "reason": "CURRENT_REPORT",
+        "source_digest": "0" * 64,
+        "retryable": False,
+        "audit_verdict": "SAFE",
+        "audit_quote": "",
+    }
+    direct_vm.clear_mocks()
+    mock_evidence(direct_vm)
+    assert direct_vm.run_validator(leader_result=fabricated) is False
+
+
+def test_validator_rejects_unsupported_ended_proposal(direct_vm, direct_deploy):
+    sunset, _ = setup(direct_vm, direct_deploy)
+    direct_vm.warp("2026-10-29T10:40:00+00:00")
+    mock_evidence(direct_vm)
+    expiry = int(sunset.get_rule("inc42")["expires_at"])
+    sunset.assess_renewal("inc42", 0, expiry)
+    ended = {
+        "verdict": "JUSTIFICATION_ENDED", "quote": QUOTE,
+        "reason": "RESOLVED_REPORT", "source_digest": "0" * 64,
+        "retryable": False, "audit_verdict": "NOT_APPLICABLE",
+        "audit_quote": "",
+    }
+    direct_vm.clear_mocks()
+    mock_evidence(direct_vm)
+    assert direct_vm.run_validator(leader_result=ended) is False
+
+
 def test_validator_rejects_malformed_and_extra_leader_fields(direct_vm, direct_deploy):
     sunset, _ = setup(direct_vm, direct_deploy)
     direct_vm.warp("2026-10-29T10:40:00+00:00")
