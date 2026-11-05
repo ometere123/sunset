@@ -1,0 +1,5 @@
+# Contract source bytes are deployment artefacts; preserve Windows CRLF bytes
+# so Git blobs, working-tree files and GenLayer source retrieval can be compared
+# exactly on this workstation.
+/contracts/sunset.py -text
+/contracts/sunset_gate.py -text
