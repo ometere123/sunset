@@ -135,8 +135,10 @@ def _material_digest(url: str, page: str, quote: str) -> str:
 
 def _json_object(raw):
     """Normalize JSON-mode model output without trusting incidental fields."""
-    if isinstance(raw, str):
-        text = raw.strip()
+    def parse_text(text):
+        if not isinstance(text, str):
+            return None
+        text = text.strip()
         if text.startswith("```"):
             lines = text.splitlines()
             if lines and lines[0].strip().startswith("```"):
@@ -145,9 +147,13 @@ def _json_object(raw):
                 lines = lines[:-1]
             text = "\n".join(lines).strip()
         try:
-            raw = json.loads(text)
+            parsed = json.loads(text)
         except (ValueError, TypeError):
             return None
+        return parsed if isinstance(parsed, dict) else None
+
+    if isinstance(raw, str):
+        raw = parse_text(raw)
     elif not isinstance(raw, dict):
         # Some pinned GenVM builds expose JSON-mode results through a
         # dict-compatible mapping instead of the builtin dict type. Convert
@@ -158,7 +164,7 @@ def _json_object(raw):
             else:
                 raw = dict(raw)
         except (TypeError, ValueError):
-            return None
+            raw = parse_text(str(raw))
     return raw if isinstance(raw, dict) else None
 
 
