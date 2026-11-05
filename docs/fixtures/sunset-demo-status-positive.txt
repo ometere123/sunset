@@ -1,0 +1,10 @@
+SUNSET CONTROLLED PUBLIC DEMONSTRATION FIXTURE
+Fixture ID: SUNSET-LIVE-POSITIVE-01
+Status: ACTIVE
+Latest update: the demonstration restriction remains active.
+Continuation condition: the demonstration restriction remains active.
+Evidence statement: this fixture affirmatively confirms active status for
+SUNSET-LIVE-POSITIVE-01 at the time of retrieval.
+Resolution: NONE
+This file is a protocol-mechanics fixture, not evidence of an unrelated
+real-world incident, identity, actor action, source ownership or legal fact.
