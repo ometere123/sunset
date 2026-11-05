@@ -16,7 +16,7 @@ execute `_observe` independently. `_observe`:
    domain-separated `SUNSET_SOURCE_SNAPSHOT_V1` digest;
 4. runs `_prompt` with the criterion and restriction inside escaped,
    explicitly untrusted source tags;
-5. validates the exact JSON schema and an exact 12–220 character witness; and
+5. validates the typed result and an exact 12–220 character witness; and
 6. when the primary result is positive, runs `_audit_prompt` once to search for
    exceptions, changed actors/dates/subjects, selective quotation, stale source
    context or a compatible reading that defeats persistence.
@@ -24,10 +24,21 @@ execute `_observe` independently. `_observe`:
 The validator does not inspect only the leader's shape. It independently
 re-fetches, re-prompts and re-audits. `_valid_result` rejects extra fields,
 wrong types, invalid enums, invalid hashes, missing witnesses and inconsistent
-audit/retryability combinations. The validator accepts only exact equality of
-the complete independently derived result. A leader claiming persistence while
+audit/retryability combinations. The validator requires agreement on the
+decision-bearing verdict and retryability. It then verifies the leader's exact
+witness against a fresh source fetch, recomputes its bounded material digest,
+and independently runs the adversarial audit against the witness context.
+Snapshot hashes, quote selection and bounded reason codes may differ when they
+do not change the material conclusion. A leader claiming persistence while
 the validator sees an ended, vetoed, changed or unavailable source therefore
 cannot produce an accepted renewal.
+
+This is the stable-runtime equivalent of a substantive Equivalence Principle:
+open-ended explanatory text is not compared byte-for-byte, but the validator
+must independently establish the material facts needed for the state
+transition. Positive persistence is never accepted without an independently
+satisfactory audit. Malformed, unsupported or materially divergent proposals
+fail closed.
 
 ## Result mapping
 
@@ -66,3 +77,23 @@ common DNS-to-private-IP wrappers. The runtime response type for pinned runner
 final redirect destination. Consequently source ownership, publisher identity,
 real-world action, identity, subjective reliance and legal liability remain
 outside the contract guarantee.
+
+## Previous disagreement investigation
+
+The two historical assessment transactions
+`0x6a105cbc898484c75b8549179be9835dd6cdee591a85e49462ffc84fc143a79c` and
+`0x77fe84104999b9c7ef3d490e42c473e78da8a69a75294f28b3016bab1e12c912`
+finalized as `MAJORITY_DISAGREE`; neither renewed a rule. Stable RPC receipt
+data confirms leader execution succeeded at the transaction layer but returned
+malformed/retryable proof results and the state transition was not applied.
+The attempted `gen_getTransactionData`, `gen_getTransactionReceipt` and
+`gen_dbg_traceTransaction` methods returned `Method not found`, so exact
+per-validator prompts, quotations and internal errors cannot be proven from
+those receipts. Validator-level web/model divergence is an inference, not an
+observed trace fact.
+
+The corrected implementation therefore compares material verdict and
+retryability, independently verifies the leader witness and bounded context,
+and runs the positive compatible-reading audit independently. It retains
+strict typed envelopes and fail-closed disagreement semantics without requiring
+open-ended quotations or reason wording to be byte-identical.

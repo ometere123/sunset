@@ -2,14 +2,17 @@
 
 The deterministic walkthrough is intentionally small:
 
-1. Register `inc42` with an immutable criterion, HTTPS source, 3,600-second
-   epoch, 1,800-second window and a bounded renewal cap.
+1. For a disposable StudioNet demonstration, register a rule with an immutable
+   criterion, HTTPS source, 900-second epoch, 720-second renewal window and a
+   renewal cap of 1 or 2. These values are intentionally accelerated.
 2. Read back the fingerprint and exact deadlines.
 3. Before the window, `assess_renewal` rejects `TOO_EARLY`.
 4. In the window, the owner submits the exact expected epoch and expiry.
 5. The leader and validator each retrieve the frozen source. A positive result
-   must also pass the independent adversarial compatible-reading audit.
-6. A positive result advances expiry by exactly 3,600 seconds; it never uses
+   must also pass the independent adversarial compatible-reading audit. They
+   must agree on the material verdict while the validator independently checks
+   the leader witness and context; quote and reason wording may differ.
+6. A positive result advances expiry by exactly one original epoch; it never uses
    transaction time plus duration and never crosses the hard stop.
 7. A transient failure records `PROOF_RETRYABLE` without extending the rule;
    the owner may retry once more. Exhaustion becomes `INCONCLUSIVE`.
@@ -21,3 +24,10 @@ The deterministic walkthrough is intentionally small:
 Offline and Direct Mode demonstrations are not live StudioNet evidence. Real
 deployment addresses, finalized transaction hashes and source parity belong in
 `docs/DEPLOYMENT.md` only after independent verification.
+
+Short, bounded 15-minute epochs were selected for reproducible StudioNet
+lifecycle verification without waiting for production-scale restriction
+periods. These values demonstrate protocol behavior and do not constitute a
+recommended production timing policy. Production epoch and renewal-window
+durations should reflect application risk, evidence-update cadence, operator
+availability and measured GenLayer consensus/finality latency.

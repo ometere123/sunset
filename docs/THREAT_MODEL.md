@@ -25,7 +25,7 @@ external website or make a legal or real-world truth determination.
 | Consensus finishes after expiry | post-consensus `_live` check rejects the transition | execution timestamps and finalization are platform semantics |
 | Temporary source/model outage | owner-only, two-attempt `PROOF_RETRYABLE` recovery with immutable receipts | a genuine emergency can still expire if recovery is exhausted |
 | Third-party assessment griefing | only the registered owner can start or retry an assessment | owner availability remains a liveness dependency |
-| Malicious leader fabricates persistence | validator independently fetches, classifies and positive-audits; exact full-result equality | validator-majority collusion is outside this contract's guarantee |
+| Malicious leader fabricates persistence | validator independently fetches, classifies and positive-audits; material verdict/retryability agreement plus witness/context verification | validator-majority collusion is outside this contract's guarantee |
 | Positive classification hides an exception | bounded independent compatible-reading audit; veto/uncertainty fails closed | semantic model judgment remains probabilistic |
 | Source prompt injection | source is escaped and labelled untrusted; source instructions are never binding | no prompt-isolation technique is a formal proof of model behavior |
 | Fabricated or selective quote | decisive results require exact source witness; audit quotes also require exact witness | a true quote can still be misleading without complete source context |
@@ -34,6 +34,23 @@ external website or make a legal or real-world truth determination.
 | Consumer replay | operation ID is recorded and action commitment is one-shot | a separate gate can intentionally authorize a separate action |
 | Wrong executor | immutable executor address checked on execute and bound views | executor key compromise remains an application risk |
 | Expired storage label bypass | `is_restricted` derives from timestamp every read; sealing is archival only | consumers must call the gate at execution time |
+
+## Consensus failure and recovery semantics
+
+Semantic uncertainty is normalized to terminal `INCONCLUSIVE` with an empty
+decisive quote. Temporary source, HTTP, model or audit infrastructure failure
+is `PROOF_RETRYABLE`; it cannot extend a rule and may be retried only by the
+owner, at most twice for the epoch. Exhaustion becomes terminal
+`INCONCLUSIVE`. A validator disagreement never creates a positive state
+transition. Assessment receipts retain each attempt, reason and expiry before
+and after the decision.
+
+The validator does not trust a leader's quote or explanation. It independently
+retrieves the frozen source, verifies the leader's witness and bounded material
+context, and independently runs the positive compatible-reading audit. The
+validator may accept different legitimate quotes or reason codes when the
+decision-bearing material classification agrees; a materially different or
+unsupported result is rejected.
 
 ## Non-goals and accepted limitations
 

@@ -32,13 +32,15 @@ consensus, unavailable evidence and unresolved recovery never extend it.
 3. The leader fetches the source and runs the primary semantic classification.
    A positive result receives one bounded adversarial compatible-reading audit.
 4. The validator independently repeats the source fetch, primary classification
-   and positive audit. It accepts only an exact, typed match of the full result,
-   including source digest, witness quote, reason, retryability and audit.
-5. A transient fetch/model/audit failure returns `PROOF_RETRYABLE` without
-   changing the expiry. At most two such attempts exist for an epoch; exhaustion
-   finalizes `INCONCLUSIVE`. A genuine semantic `INCONCLUSIVE` is terminal for
-   that epoch immediately.
-6. Consumers read the rule at execution time. `SunsetGate` additionally binds a
+   and positive audit. Consensus compares the decision-bearing material verdict
+   and retryability, while independently verifying the leader's witness,
+   bounded surrounding context and source binding. Legitimate quote and reason
+   wording differences do not cause disagreement; unsupported or materially
+   different conclusions do. A transient fetch/model/audit failure returns
+   `PROOF_RETRYABLE` without changing the expiry. At most two such attempts exist
+   for an epoch; exhaustion finalizes `INCONCLUSIVE`. A genuine semantic
+   `INCONCLUSIVE` is terminal for that epoch immediately.
+5. Consumers read the rule at execution time. `SunsetGate` additionally binds a
    typed registry address, rule fingerprint, executor address and a domain-
    separated commitment to one exact operation ID and payload.
 
@@ -112,8 +114,10 @@ trust limitations. Public pages do not independently prove the real-world
 actor, action, identity, source ownership or legal consequence.
 
 The finalized StudioNet deployment, source-parity checks and consumer receipts
-are recorded in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The primary release
-address is `0x58EECE051565E256Cf02060E4478900D69fDCfc0`; the final consumer is
-`0xFeFF39c5A3641d28e649e1508B704fa01F0B4DF1`. The explorer service returned
+are recorded in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The corrected primary
+release address is `0x8D823Dcc31E4A3089D64D0f902927588Fb335Bb2`. The final
+positive-rule consumer is `0x7376A4BED67841C98F3061D894776b66C0Ab70F6`; the
+separate automatic-expiry consumer is
+`0x50011d2Da2bb665cb79b3De45a7A4202e3b7de14`. The explorer service returned
 HTTP 503 during address-page verification, so no address-specific explorer URL
 is claimed here.
