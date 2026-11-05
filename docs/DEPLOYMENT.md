@@ -21,6 +21,11 @@ release.
 returned `0xf22f`. No deployment or test in this ledger uses chain 61997,
 Studio Dev, Studio Next or a global CLI.
 
+Release commit: `099b7123e1b32c172a0442f8851c0e8247deab31` on `main`.
+The corresponding GitHub Actions run
+[`42128664898`](https://github.com/ometere123/sunset/actions/runs/42128664898)
+completed successfully for the offline, GenVM and pinned-CLI jobs.
+
 ## Final source artifacts
 
 | File | SHA-256 | Deployed-byte check |

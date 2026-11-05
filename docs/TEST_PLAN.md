@@ -60,7 +60,7 @@ tests. Both native validator paths and the Windows-only test shim were exercised
 locally. Simulated/offline tests are not live StudioNet consensus evidence; the
 finalized live receipts are recorded in `docs/DEPLOYMENT.md`.
 
-The final workflow result and commit are recorded after the documentation
-closeout in the repository release ledger and the GitHub Actions run linked
-from the final release commit. Historical run `42086859791` and commit
+The documentation closeout commit is
+`099b7123e1b32c172a0442f8851c0e8247deab31`. Its GitHub Actions run
+`42128664898` completed successfully. Historical run `42086859791` and commit
 `07b933c08d79152244f6bb627730307918ddea88` are retained only as prior evidence.
