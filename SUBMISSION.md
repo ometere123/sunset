@@ -30,8 +30,8 @@ enforcement.
 
 ## Evidence status
 
-The final verification records 60 offline pytest tests, 18 native Direct Mode
-tests (78 total), 45 preflight assertions, two focused mutation tests and both contracts
+The final verification records 61 offline tests, 18 native Direct Mode
+tests (79 total), 45 preflight assertions, two focused mutation tests and both contracts
 passing GenVM lint and schema validation under linter 0.11.0 and runner
 v0.2.12. Finalized StudioNet deployment, source-parity and consumer receipts
 are recorded in `docs/DEPLOYMENT.md`. No simulated result is presented as live
