@@ -26,7 +26,36 @@ The corresponding GitHub Actions run
 [`42128664898`](https://github.com/ometere123/sunset/actions/runs/42128664898)
 completed successfully for the offline, GenVM and pinned-CLI jobs.
 
-## Final source artifacts
+## SunsetGate commitment correction
+
+The corrected gate on StudioNet 61999 is `0x0d5983F08d80b9771Bf8e3973C7bc2Ca8c6E03E4`.
+Deployment transaction `0xc0f7bb96621f3a3b4f7e3c4b0dbd929a4139214cbbbb66c1c10cca87fad7899c` is FINALIZED with leader execution SUCCESS.
+The SHA-256 of the RPC deployment's base64-decoded contract source, the local
+file and the Git blob is `98265e9a14c46fc87f35bcf204057f28eca0313eb58852588aef166dcf71bacc`.
+
+The gate binds the primary registry below, rule `sunset-hardening-ended-v3`
+and the fingerprint and executor listed under the historical ended-rule gate.
+The constructor received uppercase commitment
+`66B41D70210D99FC146B7F24360A4E84FFE42C83684FEF78371C755D0DE33183`,
+computed by the corrected helper for operation `unicode-review-v1` and payload
+`café` (U+00E9). The write `0xc3a47f55d2e29144bd98d6ef935ce94a18edc1c84079751c82ee270c97deed7d`
+is FINALIZED with leader execution SUCCESS. Readback returned execution count 1 and
+`is_executed("unicode-review-v1") = true`.
+
+Run `npm ci --ignore-scripts` and
+`python -m unittest discover -s tests -p test_offline.py`.
+All 61 offline tests passed. The regression hashes the actual Python
+serializer's bytes with Keccak-256 for comparison with the Node helper,
+then checks uppercase constructor input and execution in the offline shim.
+Vectors include ASCII, U+00E9, emoji, DEL, escapes and 2,048 emoji.
+GenVM v0.2.12 lint and schema extraction passed for the corrected gate.
+
+The helper now uses compact sorted-key JSON with Python-compatible ASCII
+escapes and the same Unicode code-point limit as the gate. ASCII commitments
+retain their existing format. Gates deployed with the old constructor retain
+their stored commitments. Use the corrected deployment for the review.
+
+## Historical source artifacts
 
 | File | SHA-256 | Deployed-byte check |
 |---|---|---|

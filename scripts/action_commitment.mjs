@@ -6,7 +6,7 @@ if (!/^0x[0-9a-fA-F]{40}$/.test(registry) ||
     !/^[A-Za-z0-9_-]{3,64}$/.test(ruleId) ||
     !/^[0-9a-fA-F]{64}$/.test(fingerprint) ||
     !/^[A-Za-z0-9_-]{3,64}$/.test(operationId) ||
-    typeof payload !== 'string' || payload.length < 1 || payload.length > 2048) {
+    typeof payload !== 'string' || payload.length < 1 || [...payload].length > 2048) {
   throw new Error('usage: node scripts/action_commitment.mjs <registry> <rule-id> <fingerprint> <operation-id> <payload>');
 }
 const value = JSON.stringify({
@@ -16,5 +16,7 @@ const value = JSON.stringify({
   payload,
   registry: registry.toLowerCase(),
   rule_id: ruleId,
-});
+// Match Python json.dumps(ensure_ascii=True), including DEL and UTF-16 pairs.
+}).replace(/[\u007f-\uffff]/g, character =>
+  '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'));
 console.log(Buffer.from(keccak_256(new TextEncoder().encode(value))).toString('hex'));

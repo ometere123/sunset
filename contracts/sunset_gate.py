@@ -56,7 +56,7 @@ class SunsetGate(gl.Contract):
         self.rule_id = rule_id
         self.expected_fingerprint = fingerprint
         self.executor = executor
-        self.expected_action_commitment = action_commitment
+        self.expected_action_commitment = action_commitment.lower()
         self.execution_count = u256(0)
 
     def _payload_commitment(self, operation_id: str, payload: str) -> str:

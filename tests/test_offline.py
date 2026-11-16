@@ -6,6 +6,7 @@ No external package or network access is required.
 import copy
 import hashlib
 import importlib.util
+import subprocess
 from pathlib import Path
 import sys
 import types
@@ -140,7 +141,8 @@ class SunsetTests(unittest.TestCase):
         self.sunset._consensus = lambda *args: self.outcome(verdict)
         return self.sunset.assess_renewal(rid, rule.renewals, rule.expiry)
 
-    def gate(self, rule_id="incident-42", fingerprint=None):
+    def gate(self, rule_id="incident-42", fingerprint=None, payload="withdrawal:incident-42",
+             use_node_commitment=False):
         if fingerprint is None:
             fingerprint = self.sunset.rule_fingerprint(rule_id)
         file = Path(__file__).resolve().parents[1] / "contracts" / "sunset_gate.py"
@@ -165,9 +167,32 @@ class SunsetTests(unittest.TestCase):
 
         module.ISunset = lambda address: Registry()
         registry = Address("0x" + "c" * 40)
-        operation_id, payload = "withdrawal-1", "withdrawal:incident-42"
-        commitment = module._payload_commitment(registry, rule_id, fingerprint,
-                                                operation_id, payload)
+        operation_id = "withdrawal-1"
+        canonical = []
+        def capture_hash(data):
+            canonical.append(data)
+            return hashlib.sha3_256(data)
+        original_hash = module.Keccak256
+        try:
+            module.Keccak256 = capture_hash
+            commitment = module._payload_commitment(
+                registry, rule_id, fingerprint, operation_id, payload,
+            )
+        finally:
+            module.Keccak256 = original_hash
+        if use_node_commitment:
+            helper = Path(__file__).resolve().parents[1] / "scripts" / "action_commitment.mjs"
+            external = subprocess.check_output(
+                ["node", str(helper), str(registry), rule_id, fingerprint, operation_id, payload],
+                text=True,
+            ).strip()
+            expected = subprocess.check_output(
+                ["node", "-e", "const {keccak_256}=require('@noble/hashes/sha3');"
+                 "console.log(Buffer.from(keccak_256(require('node:fs').readFileSync(0))).toString('hex'))"],
+                input=canonical[0], cwd=helper.parent.parent,
+            ).decode("ascii").strip()
+            self.assertEqual(external, expected)
+            commitment = commitment.upper()
         gate = module.SunsetGate(registry, rule_id, fingerprint, self.owner, commitment)
         gate.executed = {}
         return gate
@@ -759,6 +784,20 @@ class SunsetTests(unittest.TestCase):
         self.assertEqual(gate.execute_once("withdrawal-1", "withdrawal:incident-42"), 1)
         self.assertEqual(gate.get_execution_count(), 1)
         self.assertTrue(gate.is_executed("withdrawal-1"))
+
+    @unittest.skipUnless(
+        (Path(__file__).resolve().parents[1] / "node_modules" / "@noble" / "hashes").is_dir(),
+        "requires npm ci for the cross-language commitment helper",
+    )
+    def test_gate_executes_node_commitment_supplied_in_uppercase(self):
+        self.register()
+        self.clock += 100
+        for payload in ("caf\u00e9", "\u2705\U0001f600\x7f\t\n\\\"",
+                        "\U0001f600" * 2048, "withdrawal:incident-42"):
+            with self.subTest(payload_length=len(payload)):
+                gate = self.gate(payload=payload, use_node_commitment=True)
+                self.assertTrue(gate.can_execute_bound("withdrawal-1", payload))
+                self.assertEqual(gate.execute_once("withdrawal-1", payload), 1)
 
     def test_gate_no_replay_after_expiry(self):
         self.register()
