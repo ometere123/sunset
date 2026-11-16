@@ -119,10 +119,11 @@ actor, action, identity, source ownership or legal consequence.
 
 The finalized StudioNet deployment, source-parity checks and consumer receipts
 are recorded in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). The hardened primary
-release address is `0xBDEAF4190a85d1aDA0BD6f82530B0711b25E306f`. The current
-ended-rule, positive-rule and expiry-rule gates are
-`0x5Ed933fc2992d466cCa5157160AB9a5d53A7b045`,
-`0x3770b26E4377FF920867A8cfF2A14da18A4d1B93` and
-`0x3A6C995b1A41daf1DbBC5B72c02b2dd4826fB812`. The explorer service returned
-HTTP 503 during address-page verification, so no address-specific explorer URL
-is claimed here.
+release address is `0xBDEAF4190a85d1aDA0BD6f82530B0711b25E306f`.
+Use the **corrected SunsetGate** at `0x0d5983F08d80b9771Bf8e3973C7bc2Ca8c6E03E4`
+for the commitment review. The [verification JSON](docs/sunsetgate-commitment-evidence.json)
+includes finalized receipts, on-chain readbacks, and an exact source comparison.
+
+The earlier ended-rule, positive-rule, and expiry-rule gates are
+[historical deployments](docs/DEPLOYMENT.md#consumer-deployments).
+Their immutable deployments retain the earlier constructor behavior.

@@ -28,6 +28,12 @@ completed successfully for the offline, GenVM and pinned-CLI jobs.
 
 ## SunsetGate commitment correction
 
+[Machine-readable evidence](sunsetgate-commitment-evidence.json) includes the
+transaction and receipt responses for both writes with credential fields redacted, raw calldata results
+and decoded state reads, and the byte comparison with the source commit.
+From the repository root, rerun
+`node scripts/capture_commitment_evidence.mjs` to query the evidence without a signer.
+
 The corrected gate on StudioNet 61999 is `0x0d5983F08d80b9771Bf8e3973C7bc2Ca8c6E03E4`.
 Deployment transaction `0xc0f7bb96621f3a3b4f7e3c4b0dbd929a4139214cbbbb66c1c10cca87fad7899c` is FINALIZED with leader execution SUCCESS.
 The SHA-256 of the RPC deployment's base64-decoded contract source, the local
@@ -75,6 +81,8 @@ source is rechecked after the documentation closeout commit.
 - Deployed source: 37,031 bytes; SHA-256 exactly matches the final committed `contracts/sunset.py`, including the oversized-source fail-closed guard.
 
 ## Consumer deployments
+
+The three gates below are historical and predate the constructor correction.
 
 ### Ended-rule gate
 

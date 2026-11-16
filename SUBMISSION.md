@@ -12,7 +12,8 @@ Character count, including spaces: 884.
 - Network: StudioNet, chain 61999, `https://studio.genlayer.com/api`
 - Primary contract: `0xBDEAF4190a85d1aDA0BD6f82530B0711b25E306f`
 - Corrected SunsetGate: `0x0d5983F08d80b9771Bf8e3973C7bc2Ca8c6E03E4`. The [commitment correction evidence](docs/DEPLOYMENT.md#sunsetgate-commitment-correction) records the Unicode execution, uppercase constructor input and matching deployed source.
-- Consumer contracts: `0x5Ed933fc2992d466cCa5157160AB9a5d53A7b045` (ended-rule gate); `0x3770b26E4377FF920867A8cfF2A14da18A4d1B93` (positive gate); `0x3A6C995b1A41daf1DbBC5B72c02b2dd4826fB812` (expiry gate)
+- [Raw StudioNet verification JSON](docs/sunsetgate-commitment-evidence.json)
+- [Historical consumer deployments](docs/DEPLOYMENT.md#consumer-deployments) predate the constructor correction.
 - Explorer: https://genlayer-explorer.vercel.app (address pages returned HTTP 503 during independent verification)
 
 ## GenLayer-native mechanism

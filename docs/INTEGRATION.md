@@ -25,7 +25,9 @@ The action commitment is the Keccak-256 hash of compact, sorted-key JSON:
 {"domain":"SUNSET_GATE_ACTION_V1","fingerprint":"...","operation_id":"...","payload":"...","registry":"0x...","rule_id":"..."}
 ```
 
-`scripts/action_commitment.mjs` computes this exact value. The operation ID and
+`scripts/action_commitment.mjs` computes this exact value using Python-compatible
+ASCII escapes for Unicode payloads. The constructor stores validated commitment
+hex in lowercase. The operation ID and
 payload are therefore not free-form permission supplied at execution time;
 they must match the frozen commitment for this gate instance.
 
@@ -43,11 +45,22 @@ fingerprint, wrong actor or wrong payload cannot. A different rule/attempt or a
 different downstream action needs a separately constructed gate; one clearance
 is not blanket authorization.
 
-The current release deployment uses `0x5Ed933fc2992d466cCa5157160AB9a5d53A7b045`
-for the ended-rule gate, `0x3770b26E4377FF920867A8cfF2A14da18A4d1B93` for the
-positive-rule gate and `0x3A6C995b1A41daf1DbBC5B72c02b2dd4826fB812` for the
-separate expiry gate. All are bound to the hardened SUNSET registry deployment
-recorded in `docs/DEPLOYMENT.md`.
+## Corrected StudioNet deployment
+
+Use `0x0d5983F08d80b9771Bf8e3973C7bc2Ca8c6E03E4` on StudioNet 61999.
+This gate binds the hardened registry at `0xBDEAF4190a85d1aDA0BD6f82530B0711b25E306f`
+and the ended rule `sunset-hardening-ended-v3`. Its finalized execution used
+`café` against an uppercase commitment supplied to the constructor.
+[Verification JSON](sunsetgate-commitment-evidence.json)
+
+## Historical consumer deployments
+
+The earlier ended-rule, positive-rule, and expiry-rule demonstrations used
+`0x5Ed933fc2992d466cCa5157160AB9a5d53A7b045`,
+`0x3770b26E4377FF920867A8cfF2A14da18A4d1B93`, and
+`0x3A6C995b1A41daf1DbBC5B72c02b2dd4826fB812`, respectively.
+These immutable gates retain their original constructor and stored commitments.
+[Historical records](DEPLOYMENT.md#consumer-deployments)
 
 ## Live proof policy
 
